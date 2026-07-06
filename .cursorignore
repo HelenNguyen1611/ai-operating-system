@@ -1,0 +1,31 @@
+# Git internals
+.git/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets & credentials
+.env
+.env.*
+credentials.json
+*.pem
+*.key
+
+# Local personal overrides
+local/
+*.local.md
+
+# Dependencies & build artifacts
+node_modules/
+.venv/
+__pycache__/
+.cache/
+dist/
+build/
+
+# Temp & logs
+tmp/
+temp/
+*.tmp
+*.log
