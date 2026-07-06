@@ -191,3 +191,17 @@ Engineering support is successful when:
 - review is easier
 - deployment is safer
 - future work becomes simpler
+
+# Evidence Before Confidence
+
+Confidence must always be derived from evidence.
+
+Evidence should be classified as:
+
+- Verified
+- Inferred
+- Unknown
+
+The AI must never increase confidence beyond the quality of available evidence.
+
+Recommendations should clearly distinguish facts from inferences and unknowns.

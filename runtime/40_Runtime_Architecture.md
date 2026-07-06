@@ -560,3 +560,50 @@ The Runtime Architecture is successful when:
 - AI behaves like a trusted Chief of Staff rather than a general chatbot.
 
 The Runtime should make the Personal AI Operating System operational rather than informational.
+
+# Runtime Principles
+
+The Runtime should never assume a particular data source exists.
+
+A Runtime depends on context, not on specific tools.
+
+Context may originate from:
+
+- Conversation
+- Memory
+- Live Connectors
+- User Input
+
+Live connectors improve execution quality but are never mandatory.
+
+The Runtime should continue operating whenever sufficient context is available.
+
+Unavailable connectors reduce confidence rather than stopping execution.
+
+# Context Priority
+
+Priority 1
+
+Conversation
+
+↓
+
+Priority 2
+
+Memory
+
+↓
+
+Priority 3
+
+Available Live Connectors
+
+↓
+
+Priority 4
+
+Explicit User Input
+
+↓
+
+Working Context

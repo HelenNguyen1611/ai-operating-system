@@ -48,20 +48,59 @@ Also use this runtime at the beginning of a workday or before daily stand-up.
 
 # Runtime Inputs
 
-Gather available live context from:
+Morning Runtime should first discover which context sources are available.
 
-- Calendar
-- Outlook
-- Jira
-- Confluence
-- Microsoft Teams
-- Leave tracker or team availability source
+Possible context sources include:
+
+## Always Available
+
 - Current conversation
+
 - Relevant project context
 
-If a data source is unavailable, state the limitation clearly.
+- AI Memory
 
-Do not invent live status.
+## Live Sources (Optional)
+
+- Calendar
+
+- Outlook
+
+- Microsoft Teams
+
+- Jira
+
+- Confluence
+
+- GitHub
+
+- Figma
+
+- Leave tracker
+
+- Other connected services
+
+## User-provided Context
+
+- Uploaded files
+
+- Screenshots
+
+- Notes
+
+- Manual updates
+
+Live connectors improve execution quality but are never mandatory.
+
+If a source is unavailable:
+
+- clearly identify the limitation
+
+- never fabricate missing information
+
+- continue using the best available context
+
+- ask only for the minimum additional information required
 
 ---
 
@@ -102,15 +141,23 @@ Start
 
 ↓
 
-Collect live context
+Discover Available Context
 
 ↓
 
-Identify team availability
+Build Working Context
 
 ↓
 
-Review calendar
+Collect Live Context
+
+↓
+
+Identify Team Availability
+
+↓
+
+Review Calendar
 
 ↓
 
@@ -118,65 +165,125 @@ Review Jira
 
 ↓
 
-Review communication
+Review Communication
 
 ↓
 
-Identify priorities
+Identify Priorities
 
 ↓
 
-Identify blockers and risks
+Identify Risks
 
 ↓
 
-Recommend execution order
+Prepare Stand-up
 
 ↓
 
-Prepare stand-up
+Suggest Execution Plan
 
 ↓
 
-Suggest first action
-
-↓
-
-Capture learning opportunities
+Capture Learning Opportunities
 
 ---
 
-# Step 1 — Collect Live Context
+# Step 0 — Discover Available Context
 
-Gather:
+Before collecting operational data, identify which context sources are currently available.
 
-- today's meetings
-- Jira Issues assigned to me
-- recently updated Issues
-- urgent emails
-- important Teams messages
-- relevant Confluence updates
-- team availability
-- known blockers
+Possible sources include:
 
-If live tools are not available, ask me to provide the missing context or proceed with clearly stated limitations.
+- Conversation
+- AI Memory
+- Calendar
+- Outlook
+- Microsoft Teams
+- Jira
+- Confluence
+- GitHub
+- Figma
+- Uploaded Files
+- User Input
+
+Do not assume any connector exists.
+
+The objective is to build the smallest useful working context before reasoning begins.
+
+---
+
+# Step 1 — Build Working Context
+
+Use the available context discovered in Step 0.
+
+Prioritise context in the following order:
+
+1. Current conversation
+
+2. AI Memory
+
+3. Verified live data
+
+4. Uploaded files
+
+5. User-provided information
+
+Only load information relevant to today's work.
+
+Avoid unnecessary context loading.
 
 ---
 
 # Step 2 — Check Team Availability
 
-Identify:
+Determine the availability of key collaborators using the best available evidence.
+
+Possible evidence includes:
+
+- Leave tracker
+
+- Outlook Calendar
+
+- Microsoft Teams presence
+
+- Out of Office status
+
+- Meeting schedules
+
+- Recent communication
+
+- Current conversation
+
+- User-provided information
+
+Assess:
+
+- who is available
+
+- who is unavailable
 
 - who is on leave
+
+- who is in meetings
+
 - who is working from home
-- who may be unavailable
+
 - who may affect delivery dependencies
 
-If team availability is unavailable, state:
+Do not rely on a single source.
 
-"Team availability source is not available."
+Combine multiple sources whenever possible.
 
-Do not guess.
+If only partial evidence is available, clearly distinguish between:
+
+- Verified
+
+- Inferred
+
+- Unknown
+
+Never guess.
 
 ---
 
@@ -211,16 +318,29 @@ Apply 20_Jira_Review only when deeper Issue analysis is required.
 
 # Step 5 — Review Communication
 
-Summarise only communication requiring action:
+Communication should be reviewed progressively.
 
-- manager requests
-- client updates
-- PM follow-ups
-- review requests
-- blocked questions
-- urgent emails
+Priority order:
 
-Do not include noise.
+1. Messages mentioning me
+
+2. Messages from my manager
+
+3. Messages from PMs
+
+4. Production incidents
+
+5. Review requests
+
+6. Client requests
+
+7. Project channels
+
+8. Remaining communication (only if required)
+
+Avoid scanning all conversations unless necessary.
+
+Prefer targeted retrieval over exhaustive search.
 
 ---
 
@@ -304,11 +424,33 @@ Recommend only.
 
 # Decision Gates
 
-## Gate 1 — Live Data Available?
+## Gate 1 — Sufficient Context Available?
 
-Proceed with full Morning Brief when live data is available.
+Determine whether enough evidence exists to produce a useful Morning Brief.
 
-If not available, produce a limited brief and clearly state missing sources.
+Priority of evidence:
+
+1. Conversation
+
+2. AI Memory
+
+3. Live Connectors
+
+4. Uploaded Files
+
+5. User Input
+
+If live data is unavailable:
+
+- continue using available evidence
+
+- identify missing sources
+
+- reduce confidence where appropriate
+
+- never fabricate information
+
+Only stop execution when there is insufficient information to produce meaningful recommendations.
 
 ---
 
@@ -322,9 +464,27 @@ If priorities conflict, recommend a decision or ask for clarification.
 
 ## Gate 3 — Blockers Identified?
 
-Proceed when blockers and waiting items are visible.
+Verify that sufficient operational awareness exists before preparing recommendations.
 
-If blockers are unknown, explicitly state that no blocker source was available.
+This includes:
+
+- blockers
+
+- key dependencies
+
+- team availability
+
+- delivery risks
+
+If some information is unavailable:
+
+- continue using verified evidence
+
+- clearly identify unknowns
+
+- reduce confidence where appropriate
+
+Do not delay execution unnecessarily.
 
 ---
 
@@ -336,37 +496,193 @@ If not, ask only the minimum questions needed.
 
 ---
 
+# Confidence Assessment
+
+Every Morning Brief should indicate the confidence of its recommendations.
+
+## High
+
+Most relevant live context is available.
+
+## Medium
+
+Some live sources are unavailable, but Conversation and Memory provide sufficient evidence.
+
+## Low
+
+Important operational context is missing.
+
+Recommendations should clearly distinguish:
+
+- facts
+- assumptions
+- recommendations
+
+Lower confidence should never prevent useful assistance.
+
 # Outputs
 
 Morning Runtime should produce:
 
 ## Executive Summary
 
-Quick version readable in under two minutes.
+Summarise the day in under two minutes.
 
 Include:
 
-- Team availability
-- Calendar highlights
-- Top 3 priorities
-- Critical risks
-- First recommended action
+- Team Availability (only significant changes)
+
+- Calendar Highlights
+
+- Top 3 Priorities
+
+- Critical Risks
+
+- First Recommended Action
+
+- Today's Mission
+
+---
+
+### Today's Mission
+
+Summarise the primary objective of the day in one sentence.
+
+Examples:
+
+- Deliver the Uppingham update and close the Grammarian incident.
+
+- Finish client commitments before starting new work.
+
+- Focus on execution rather than exploration.
+
+This should help me immediately understand the most important outcome for today.
 
 ---
 
 ## Full Morning Brief
 
-Include:
+The report should contain the following sections in order.
 
-- Team Availability
+### 1. Team Availability
+
+Summarise the availability of key collaborators.
+
+Separate information into:
+
+#### Verified
+
+Availability confirmed from reliable sources.
+
+Examples:
+
 - Calendar
-- Jira Review
-- Communication
-- Risks
-- Recommended Priorities
-- Suggested Schedule
-- Stand-up Draft
-- AI Recommendations
+
+- Teams Presence
+
+- Out of Office
+
+- Leave Tracker
+
+#### Inferred
+
+Availability inferred from recent communication, meetings, or other evidence.
+
+Clearly explain why.
+
+#### Unknown
+
+Information that cannot currently be verified.
+
+Do not guess.
+
+Always state the confidence level.
+
+---
+
+### 2. Calendar
+
+Today's meetings.
+
+Preparation required.
+
+Deep work opportunities.
+
+---
+
+### 3. Jira Review
+
+Current work items.
+
+High priority work.
+
+Blocked work.
+
+Waiting for review.
+
+Due items.
+
+If Jira is unavailable:
+
+Clearly state the limitation.
+
+Do not fabricate information.
+
+---
+
+### 4. Communication
+
+Only actionable communication.
+
+Ignore noise.
+
+---
+
+### 5. Risks
+
+Delivery risks.
+
+Dependency risks.
+
+Communication risks.
+
+---
+
+### 6. Recommended Priorities
+
+Top priorities.
+
+Explain why.
+
+---
+
+### 7. Suggested Schedule
+
+Recommended execution order.
+
+---
+
+### 8. Stand-up Draft
+
+Yesterday
+
+Today
+
+Blockers
+
+---
+
+### 9. AI Recommendations
+
+Separate recommendations into:
+
+#### Today's Recommendations
+
+Immediate actions.
+
+#### System Improvement
+
+Long-term improvements to workflow or the AI Operating System.
 
 ---
 

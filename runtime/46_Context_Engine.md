@@ -194,6 +194,139 @@ Older information should only be loaded when it improves reasoning.
 
 ---
 
+# Context Budget
+
+Every execution has limited resources.
+
+Limitations may include:
+
+- model context window
+- connector search limits
+- API rate limits
+- response time
+- computation cost
+- user attention
+
+The objective is not to retrieve every available piece of information.
+
+The objective is to retrieve the minimum context required to support high-quality reasoning.
+
+More context is not always better.
+
+The Context Engine should optimise for relevance rather than completeness.
+
+---
+
+# Context Budget Principles
+
+## Load High-Value Context First
+
+Prioritise context according to business value.
+
+Typical priority:
+
+1. Current conversation
+2. Current task
+3. Active project
+4. Live operational context
+5. AI Memory
+6. Historical information
+
+Do not retrieve historical information before operational context unless explicitly required.
+
+---
+
+## Prefer Targeted Retrieval
+
+Retrieve only the information needed for the current objective.
+
+Examples
+
+Morning Runtime
+
+Prefer:
+
+- today's meetings
+- messages mentioning me
+- manager requests
+- production incidents
+- blocked work
+
+Avoid:
+
+- every Teams conversation
+- every email
+- complete Jira history
+
+Engineering Runtime
+
+Prefer:
+
+- current Issue
+- related Pull Request
+- affected documentation
+
+Avoid:
+
+- entire repository
+- unrelated projects
+
+---
+
+## Progressive Context Expansion
+
+Begin with the smallest useful context.
+
+Expand only when additional information is required.
+
+Example:
+
+Conversation
+
+↓
+
+Current Project
+
+↓
+
+Relevant Documentation
+
+↓
+
+Historical Decisions (only if needed)
+
+Never load every available source at the beginning.
+
+---
+
+## Stop When Context Is Sufficient
+
+Stop retrieving context when enough evidence exists to make a reliable recommendation.
+
+Additional context should only be loaded if it is likely to change the decision.
+
+---
+
+## Respect Connector Limitations
+
+External systems may have:
+
+- search limits
+- rate limits
+- permission restrictions
+- partial results
+
+When limitations occur:
+
+- continue execution
+- clearly report the limitation
+- identify possible blind spots
+- reduce confidence where appropriate
+
+Never pretend incomplete retrieval is complete.
+
+---
+
 # Context Sources
 
 Possible sources include:
@@ -273,6 +406,39 @@ Before reasoning, verify:
 ✓ Is context contradictory?
 
 Resolve issues before continuing.
+
+---
+
+# Context Sufficiency Assessment
+
+Before reasoning begins, determine whether the current context is sufficient.
+
+Ask:
+
+- Is the current context relevant?
+- Is critical information missing?
+- Will additional context significantly change the recommendation?
+- Can execution continue safely?
+
+Possible outcomes:
+
+## Sufficient
+
+Proceed immediately.
+
+## Partially Sufficient
+
+Continue with reduced confidence.
+
+Clearly identify missing information.
+
+## Insufficient
+
+Request only the minimum additional information required.
+
+Avoid asking unnecessary questions.
+
+The AI should prefer progressing with partial context over waiting for perfect context whenever it is safe to do so.
 
 ---
 
