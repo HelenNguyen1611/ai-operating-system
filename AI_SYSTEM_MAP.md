@@ -4,33 +4,33 @@
         │                             │                             │
         ▼                             ▼                             ▼
 
-Work Context (01)          Daily Workflow (03)         Knowledge Sources (02)
-        │                             │                             │
-        └──────────────┬──────────────┴──────────────┬──────────────┘
-                       ▼                             ▼
-              Decision Framework (04)     Communication Standards (05)
-                       │                             │
-                       └──────────────┬──────────────┘
-                                      ▼
-                          Leadership Principles (06)
-                                      │
-                                      ▼
-                          Engineering Standards (07)
-                                      │
-                                      ▼
-                          AI Collaboration (08)
-                                      │
-                                      ▼
-                          Continuous Improvement (09)
-                                      │
-                                      ▼
-                          ENGINEERING LAYER (20–29)
-                                      │
-                                      ▼
-                          Operations Layer (10–12)
-                                      │
-                                      ▼
-                          Growth Layer (09, 28, 39)
+Work Context (01) Daily Workflow (03) Knowledge Sources (02)
+│ │ │
+└──────────────┬──────────────┴──────────────┬──────────────┘
+▼ ▼
+Decision Framework (04) Communication Standards (05)
+│ │
+└──────────────┬──────────────┘
+▼
+Leadership Principles (06)
+│
+▼
+Engineering Standards (07)
+│
+▼
+AI Collaboration (08)
+│
+▼
+Continuous Improvement (09)
+│
+▼
+ENGINEERING LAYER (20–29)
+│
+▼
+Operations Layer (10–12)
+│
+▼
+Growth Layer (09, 28, 39)
 ──────────────────────────────────────────────────────────────────────────────
 
 # North Star
@@ -50,7 +50,7 @@ Every document should contribute to one or more of these goals:
 - Better learning
 - Better long-term knowledge
 
-Whenever new knowledge is discovered, determine whether it should become part of the AI Operating System Framework.
+Whenever new knowledge is discovered, determine whether it should become part of this Operating System.
 
 ---
 
@@ -60,12 +60,12 @@ Whenever new knowledge is discovered, determine whether it should become part of
 
 AI understands me.
 
-| ID | Handbook | Purpose |
-|----|----------|---------|
-| 00 | AI Employee Handbook | System entry point and navigation |
-| 01 | Work Context | Role, projects, clients, constraints |
-| 02 | Knowledge Sources | Jira, Confluence, Figma, live data |
-| 03 | Daily Workflow | Daily rhythm and priorities |
+| ID  | Handbook             | Purpose                              |
+| --- | -------------------- | ------------------------------------ |
+| 00  | AI Employee Handbook | System entry point and navigation    |
+| 01  | Work Context         | Role, projects, clients, constraints |
+| 02  | Knowledge Sources    | Jira, Confluence, Figma, live data   |
+| 03  | Daily Workflow       | Daily rhythm and priorities          |
 
 Foundation provides context before any Engineering Layer work begins.
 
@@ -75,10 +75,10 @@ Foundation provides context before any Engineering Layer work begins.
 
 AI thinks like me.
 
-| ID | Handbook | Purpose |
-|----|----------|---------|
-| 04 | Decision Framework | How to analyse options and decide |
-| 05 | Communication Standards | How to communicate with clarity |
+| ID  | Handbook                | Purpose                           |
+| --- | ----------------------- | --------------------------------- |
+| 04  | Decision Framework      | How to analyse options and decide |
+| 05  | Communication Standards | How to communicate with clarity   |
 
 Thinking Layer guides reasoning before action in Engineering and Operations.
 
@@ -88,9 +88,9 @@ Thinking Layer guides reasoning before action in Engineering and Operations.
 
 AI helps me lead.
 
-| ID | Handbook | Purpose |
-|----|----------|---------|
-| 06 | Leadership Principles | Leadership values and expectations |
+| ID  | Handbook              | Purpose                            |
+| --- | --------------------- | ---------------------------------- |
+| 06  | Leadership Principles | Leadership values and expectations |
 
 Leadership Layer informs stakeholder communication, Internal Review, and Release Management (29).
 
@@ -102,18 +102,18 @@ AI works like me.
 
 Engineering Layer handbooks sit on Engineering Standards (07), AI Collaboration (08), and Continuous Improvement (09).
 
-| ID | Handbook | AI Role | Primary Responsibility |
-|----|----------|---------|------------------------|
-| 20 | Jira Review | Senior Requirements Analyst | Pre-implementation Issue analysis |
-| 21 | Frontend Delivery | Senior Frontend Engineer | Frontend implementation lifecycle |
-| 22 | QA Checklist | QA Lead | QA verification and release readiness |
-| 23 | Deployment | Deployment Engineer | Deployment execution and Production Verification |
-| 24 | Client Feedback | Client Success Partner | Client Feedback analysis and response |
-| 25 | Bug Investigation | Senior Debugging Engineer | Root cause analysis and prevention |
-| 26 | Performance | Performance Engineer | Performance analysis and optimisation |
-| 27 | Accessibility | Accessibility Specialist | Accessibility standards and remediation |
-| 28 | Documentation | Knowledge Manager | Knowledge capture and maintenance |
-| 29 | Release Management | Release Manager | Release coordination and Release Retrospective |
+| ID  | Handbook           | AI Role                     | Primary Responsibility                           |
+| --- | ------------------ | --------------------------- | ------------------------------------------------ |
+| 20  | Jira Review        | Senior Requirements Analyst | Pre-implementation Issue analysis                |
+| 21  | Frontend Delivery  | Senior Frontend Engineer    | Frontend implementation lifecycle                |
+| 22  | QA Checklist       | QA Lead                     | QA verification and release readiness            |
+| 23  | Deployment         | Deployment Engineer         | Deployment execution and Production Verification |
+| 24  | Client Feedback    | Client Success Partner      | Client Feedback analysis and response            |
+| 25  | Bug Investigation  | Senior Debugging Engineer   | Root cause analysis and prevention               |
+| 26  | Performance        | Performance Engineer        | Performance analysis and optimisation            |
+| 27  | Accessibility      | Accessibility Specialist    | Accessibility standards and remediation          |
+| 28  | Documentation      | Knowledge Manager           | Knowledge capture and maintenance                |
+| 29  | Release Management | Release Manager             | Release coordination and Release Retrospective   |
 
 ---
 
@@ -121,11 +121,11 @@ Engineering Layer handbooks sit on Engineering Standards (07), AI Collaboration 
 
 AI supports me daily.
 
-| ID | Handbook | Purpose |
-|----|----------|---------|
-| 10 | Morning Brief | Start-of-day orientation |
-| 11 | Standup | Daily progress and blockers |
-| 12 | End of Day | Close-out and handoff |
+| ID  | Handbook      | Purpose                     |
+| --- | ------------- | --------------------------- |
+| 10  | Morning Brief | Start-of-day orientation    |
+| 11  | Standup       | Daily progress and blockers |
+| 12  | End of Day    | Close-out and handoff       |
 
 Operations Layer connects daily execution to the Engineering Layer.
 
@@ -135,11 +135,11 @@ Operations Layer connects daily execution to the Engineering Layer.
 
 AI helps me improve.
 
-| ID | Handbook | Purpose |
-|----|----------|---------|
-| 09 | Continuous Improvement | System-wide improvement loop |
-| 28 | Documentation | Knowledge Base and handbook updates |
-| 39 | Knowledge Sharing | Team and organisational knowledge |
+| ID  | Handbook               | Purpose                             |
+| --- | ---------------------- | ----------------------------------- |
+| 09  | Continuous Improvement | System-wide improvement loop        |
+| 28  | Documentation          | Knowledge Base and handbook updates |
+| 39  | Knowledge Sharing      | Team and organisational knowledge   |
 
 Growth Layer receives outputs from Release Management (29) and Documentation (28).
 
@@ -179,18 +179,18 @@ Each handbook consumes outputs from its upstream neighbour and produces outputs 
 
 ## Primary Handoff Chain
 
-| From | Primary Output | To |
-|------|----------------|-----|
-| 20 | Implementation Plan, Business Goal, Acceptance Criteria, Risk Assessment | 21 |
-| 21 | Implemented frontend work, Self QA complete, Internal Review ready | 22 |
-| 22 | QA Report, release readiness confirmation | 23 |
-| 23 | Deployment Report, Production Verification status | 24 |
-| 24 | Feedback analysis, prioritised response plan, Client Confirmation | 25 |
-| 25 | Investigation Report, root cause, fix verification, prevention plan | 26 |
-| 26 | Performance Report, optimisation results, verification | 27 |
-| 27 | Accessibility Report, remediation verification | 28 |
-| 28 | Documentation, Knowledge Updates, AI Operating System Update draft | 29 |
-| 29 | Release Summary, Release Retrospective, stakeholder communication | 09, Growth Layer |
+| From | Primary Output                                                           | To               |
+| ---- | ------------------------------------------------------------------------ | ---------------- |
+| 20   | Implementation Plan, Business Goal, Acceptance Criteria, Risk Assessment | 21               |
+| 21   | Implemented frontend work, Self QA complete, Internal Review ready       | 22               |
+| 22   | QA Report, release readiness confirmation                                | 23               |
+| 23   | Deployment Report, Production Verification status                        | 24               |
+| 24   | Feedback analysis, prioritised response plan, Client Confirmation        | 25               |
+| 25   | Investigation Report, root cause, fix verification, prevention plan      | 26               |
+| 26   | Performance Report, optimisation results, verification                   | 27               |
+| 27   | Accessibility Report, remediation verification                           | 28               |
+| 28   | Documentation, Knowledge Updates, AI Operating System Update draft       | 29               |
+| 29   | Release Summary, Release Retrospective, stakeholder communication        | 09, Growth Layer |
 
 ---
 
@@ -200,18 +200,18 @@ Each handbook defines Decision Gates.
 
 If a gate fails, the AI recommends the next action before proceeding downstream.
 
-| Handbook | Example Gates |
-|----------|---------------|
-| 20 | Requirements clear? Acceptance Criteria testable? |
-| 21 | Design reviewed? Implementation complete? Self QA passed? |
-| 22 | QA passed? Release readiness confirmed? |
-| 23 | Deployment successful? Production verified? |
-| 24 | Client Feedback understood? Client approved? |
-| 25 | Bug reproduced? Root cause identified? Fix verified? |
-| 26 | Performance measured? Optimisation verified? |
-| 27 | Accessibility acceptable? Regressions checked? |
-| 28 | Documentation accurate? Knowledge captured? |
-| 29 | Release scope confirmed? Release Retrospective complete? |
+| Handbook | Example Gates                                             |
+| -------- | --------------------------------------------------------- |
+| 20       | Requirements clear? Acceptance Criteria testable?         |
+| 21       | Design reviewed? Implementation complete? Self QA passed? |
+| 22       | QA passed? Release readiness confirmed?                   |
+| 23       | Deployment successful? Production verified?               |
+| 24       | Client Feedback understood? Client approved?              |
+| 25       | Bug reproduced? Root cause identified? Fix verified?      |
+| 26       | Performance measured? Optimisation verified?              |
+| 27       | Accessibility acceptable? Regressions checked?            |
+| 28       | Documentation accurate? Knowledge captured?               |
+| 29       | Release scope confirmed? Release Retrospective complete?  |
 
 ---
 
@@ -219,40 +219,40 @@ If a gate fails, the AI recommends the next action before proceeding downstream.
 
 Use consistently across the Engineering Layer:
 
-| Term | Meaning |
-|------|---------|
-| Business Goal | Why the work exists |
-| Acceptance Criteria | Testable conditions for completion |
-| Issue | Jira Issue (not ticket) |
-| QA | Formal quality assurance (22) |
-| Verification | Scoped confirmation after a change |
-| Deployment | Technical publish act (23) |
-| Release | Business event with coordination (29) |
-| Production Verification | Confirming production behaviour |
-| Client Review | Delivery phase when client evaluates work |
-| Client Feedback | Items received during Client Review (24) |
-| Internal Review | Peer review before Client Review |
-| Lessons Learned | Capture after delivery work |
-| Release Retrospective | Release-level review (29) |
-| AI Operating System Update | Knowledge applied to this repository |
-| Engineering Standards | 07_Engineering_Standards |
+| Term                       | Meaning                                   |
+| -------------------------- | ----------------------------------------- |
+| Business Goal              | Why the work exists                       |
+| Acceptance Criteria        | Testable conditions for completion        |
+| Issue                      | Jira Issue (not ticket)                   |
+| QA                         | Formal quality assurance (22)             |
+| Verification               | Scoped confirmation after a change        |
+| Deployment                 | Technical publish act (23)                |
+| Release                    | Business event with coordination (29)     |
+| Production Verification    | Confirming production behaviour           |
+| Client Review              | Delivery phase when client evaluates work |
+| Client Feedback            | Items received during Client Review (24)  |
+| Internal Review            | Peer review before Client Review          |
+| Lessons Learned            | Capture after delivery work               |
+| Release Retrospective      | Release-level review (29)                 |
+| AI Operating System Update | Knowledge applied to this repository      |
+| Engineering Standards      | 07_Engineering_Standards                  |
 
 ---
 
 ## Ownership Boundaries
 
-| Topic | Owner | Supporting handbook |
-|-------|-------|---------------------|
-| Issue analysis | 20 | — |
-| Frontend implementation | 21 | 20 inputs |
-| QA verification | 22 | 21 Self QA |
-| Deployment execution | 23 | 22 release readiness |
-| Client Feedback analysis | 24 | 21 Client Review phase |
-| Bug investigation | 25 | 20 bug triage |
-| Performance optimisation | 26 | 22 smoke checks |
-| Accessibility remediation | 27 | 22 smoke checks |
-| Knowledge capture | 28 | all handbooks |
-| Release coordination | 29 | 23 deployment execution |
+| Topic                     | Owner | Supporting handbook     |
+| ------------------------- | ----- | ----------------------- |
+| Issue analysis            | 20    | —                       |
+| Frontend implementation   | 21    | 20 inputs               |
+| QA verification           | 22    | 21 Self QA              |
+| Deployment execution      | 23    | 22 release readiness    |
+| Client Feedback analysis  | 24    | 21 Client Review phase  |
+| Bug investigation         | 25    | 20 bug triage           |
+| Performance optimisation  | 26    | 22 smoke checks         |
+| Accessibility remediation | 27    | 22 smoke checks         |
+| Knowledge capture         | 28    | all handbooks           |
+| Release coordination      | 29    | 23 deployment execution |
 
 Deployment (23) executes. Release Management (29) coordinates, communicates, and retrospects.
 
@@ -413,47 +413,47 @@ When work completes in any handbook, ask whether knowledge belongs in 28 Documen
                  DAILY OPERATION LIFECYCLE
 
 Morning Brief (10)
-        │
-        ▼
+│
+▼
 Stand-up (11)
-        │
-        ▼
+│
+▼
 Development ──────────────► 20 Jira Review → 21 Frontend Delivery
-        │
-        ▼
+│
+▼
 Code Review / Internal Review
-        │
-        ▼
+│
+▼
 QA ───────────────────────► 22 QA Checklist
-        │
-        ▼
+│
+▼
 Deployment ───────────────► 23 Deployment
-        │
-        ▼
+│
+▼
 Client Review ────────────► 24 Client Feedback
-        │
-        ▼
+│
+▼
 Bug Investigation ────────► 25 Bug Investigation (when needed)
-        │
-        ▼
+│
+▼
 Performance / Accessibility ► 26 Performance → 27 Accessibility
-        │
-        ▼
+│
+▼
 Documentation ────────────► 28 Documentation
-        │
-        ▼
+│
+▼
 Release Management ───────► 29 Release Management
-        │
-        ▼
+│
+▼
 End of Day (12)
-        │
-        ▼
+│
+▼
 Lessons Learned / Release Retrospective
-        │
-        ▼
+│
+▼
 AI Operating System Update
-        │
-        ▼
+│
+▼
 Future Decisions
 
 ---
@@ -473,21 +473,21 @@ Live data feeds Foundation Layer (02) and Engineering Layer inputs (20–29).
         ▼
 
 Morning Brief (10)
-        │
-        ▼
+│
+▼
 Stand-up (11)
-        │
-        ▼
+│
+▼
 Execution ────────────────► Engineering Layer (20–29)
-        │
-        ▼
+│
+▼
 End of Day (12)
-        │
-        ▼
+│
+▼
 Lessons Learned
-        │
-        ▼
+│
+▼
 AI Handbook Update
-        │
-        ▼
+│
+▼
 Future Decisions
