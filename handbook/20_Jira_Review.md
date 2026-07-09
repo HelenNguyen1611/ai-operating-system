@@ -439,11 +439,11 @@ Review must pass these gates before proceeding to the next phase.
 
 ## Specialist Handoff Gates
 
-| Condition | Hand off to |
-|-----------|-------------|
-| Bug requires deep root cause analysis | 25_Bug_Investigation |
-| Deployment or Release coordination needed | 23_Deployment, 29_Release_Management |
-| Client Review or Client Feedback context needed | 24_Client_Feedback |
+| Condition                                       | Hand off to                          |
+| ----------------------------------------------- | ------------------------------------ |
+| Bug requires deep root cause analysis           | 25_Bug_Investigation                 |
+| Deployment or Release coordination needed       | 23_Deployment, 29_Release_Management |
+| Client Review or Client Feedback context needed | 24_Client_Feedback                   |
 
 ---
 
@@ -478,6 +478,47 @@ When passing to frontend delivery, ensure the handoff includes:
 - Risk register and open questions
 - Implementation strategy and delivery plan
 - Effort estimate with stated assumptions
+
+---
+
+# Standard JQL Queries
+
+## Morning Review
+
+assignee = currentUser()
+AND resolution = Unresolved
+ORDER BY priority DESC, updated DESC
+
+---
+
+## Blocked Issues
+
+assignee = currentUser()
+AND status = Blocked
+ORDER BY updated DESC
+
+---
+
+## Due Today
+
+assignee = currentUser()
+AND due <= endOfDay()
+AND resolution = Unresolved
+
+---
+
+## Waiting for Review
+
+assignee = currentUser()
+AND status = "In Review"
+
+---
+
+## Recently Updated
+
+assignee = currentUser()
+AND updated >= startOfDay()
+ORDER BY updated DESC
 
 ---
 

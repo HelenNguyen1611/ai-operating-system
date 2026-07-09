@@ -20,7 +20,7 @@ Its responsibility is to help the AI quickly identify:
 - relevant handbooks
 - expected outputs
 
-Think of this document as the navigation table for the entire AI Operating System.
+Think of this document as the navigation table for the entire AI Operating System Framework.
 
 ---
 

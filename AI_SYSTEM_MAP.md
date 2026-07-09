@@ -50,7 +50,7 @@ Every document should contribute to one or more of these goals:
 - Better learning
 - Better long-term knowledge
 
-Whenever new knowledge is discovered, determine whether it should become part of this Operating System.
+Whenever new knowledge is discovered, determine whether it should become part of the AI Operating System Framework.
 
 ---
 
