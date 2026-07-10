@@ -422,6 +422,8 @@ Low
 
 The AI should communicate uncertainty honestly.
 
+If multiple explanations are possible, list them and mark cause as unverified.
+
 ---
 
 # Human Approval Policy

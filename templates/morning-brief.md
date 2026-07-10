@@ -44,22 +44,27 @@ Never use bilingual by default.
 # Morning Brief
 
 ## Today's Mission
+
 One sentence.
 
 ## Top 3 Priorities
+
 1.
 2.
 3.
 
 ## Risks / Unknowns
+
 -
 
 ## Stand-up Draft
+
 Yesterday:
 Today:
 Blockers:
 
 ## First Action
+
 -
 ```
 
@@ -85,27 +90,33 @@ Stand-up Draft uses Yesterday / Today / Blockers lines instead of bullets.
 # Morning Brief
 
 ## Context Status
+
 - Available:
 - Missing:
 - Confidence:
 
 ## Today's Mission
+
 -
 
 ## Top Priorities
+
 1.
 2.
 3.
 
 ## Risks / Unknowns
+
 -
 
 ## Stand-up Draft
+
 Yesterday:
 Today:
 Blockers:
 
 ## Action Plan
+
 Now:
 Next:
 Later:
@@ -153,14 +164,14 @@ Use when detail = `full`.
 
 # Quick Reference
 
-| Detail | Sections | Bullet limit | Context Budget | Learning |
-|--------|----------|--------------|----------------|----------|
-| brief | 5 | 8 total | No | No |
-| standard | 6 | 3 per section | Summary only | Optional 1 line |
-| full | All | None | Yes | Yes |
+| Detail   | Sections | Bullet limit  | Context Budget | Learning        |
+| -------- | -------- | ------------- | -------------- | --------------- |
+| brief    | 5        | 8 total       | No             | No              |
+| standard | 6        | 3 per section | Summary only   | Optional 1 line |
+| full     | All      | None          | Yes            | Yes             |
 
-| Language | Default | When to use |
-|----------|---------|-------------|
-| en | Yes | Always unless specified |
-| vi | No | User passes `vi` |
-| bilingual | No | User passes `bilingual` only |
+| Language  | Default | When to use                  |
+| --------- | ------- | ---------------------------- |
+| en        | Yes     | Always unless specified      |
+| vi        | No      | User passes `vi`             |
+| bilingual | No      | User passes `bilingual` only |

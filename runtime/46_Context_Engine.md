@@ -194,6 +194,18 @@ Older information should only be loaded when it improves reasoning.
 
 ---
 
+# Runtime Configuration Context
+
+Runtime configuration is part of working context.
+
+Rules:
+
+- Load `config/runtime.yaml` — timezone, locale, language, and output preferences — before live retrieval.
+- Connector timestamps must be normalised to runtime timezone before reasoning.
+- Context sufficiency cannot be declared if time-bound data has not been normalised.
+
+---
+
 # Context Budget
 
 Every execution has limited resources.

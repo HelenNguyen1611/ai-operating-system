@@ -104,6 +104,18 @@ If a source is unavailable:
 
 ---
 
+# Time Handling
+
+Rules:
+
+- Morning Runtime uses configured workday timezone from `config/runtime.yaml`.
+- Default timezone for Helen pilot: **Asia/Ho_Chi_Minh**.
+- Today, yesterday, EOD, due today, overdue, and this morning must be interpreted in runtime timezone.
+- If a connector returns UTC timestamps, convert before classification.
+- Do not call an email "yesterday" if it is today in the configured timezone.
+
+---
+
 # Knowledge to Load
 
 Load only the relevant knowledge:
@@ -341,6 +353,14 @@ Priority order:
 Avoid scanning all conversations unless necessary.
 
 Prefer targeted retrieval over exhaustive search.
+
+Communication Review must use **Email Retrieval Strategy** from `commands/_base/morning.base.md`.
+
+Do not summarise email purely by recency.
+
+Prioritise leadership/action/deadline emails before general recent emails.
+
+Use `config/runtime.yaml` email search window (`last_36_hours`) — not natural-language date filters alone.
 
 ---
 

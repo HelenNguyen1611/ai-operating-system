@@ -1,0 +1,27 @@
+user:
+  locale: vi-VN
+  timezone: Asia/Ho_Chi_Minh
+
+output:
+  default_language: en
+  time_format: 24h
+  display_timezone: Asia/Ho_Chi_Minh
+
+workday:
+  timezone: Asia/Ho_Chi_Minh
+  start_time: "00:00"
+  end_time: "23:59"
+
+email:
+  display_timezone: Asia/Ho_Chi_Minh
+  search_window: last_36_hours
+  avoid_natural_language_dates: true
+
+calendar:
+  display_timezone: Asia/Ho_Chi_Minh
+
+teams:
+  display_timezone: Asia/Ho_Chi_Minh
+
+jira:
+  display_timezone: Asia/Ho_Chi_Minh
