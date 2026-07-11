@@ -1,0 +1,16 @@
+{
+  "issues": [
+    {
+      "key": "CW-118",
+      "fields": {
+        "summary": "404 page",
+        "status": { "name": "In Progress" },
+        "priority": { "name": "Normal" },
+        "assignee": { "displayName": "Helen Nguyen" },
+        "updated": "2026-07-03T16:09:01.990+0700",
+        "duedate": null
+      }
+    }
+  ],
+  "isLast": true
+}

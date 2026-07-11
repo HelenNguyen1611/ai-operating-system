@@ -1,0 +1,16 @@
+{
+  "issues": [
+    {
+      "key": "TRIN-79",
+      "fields": {
+        "summary": "Review & make guild for client - translate plugin",
+        "status": { "name": "WT In Progress" },
+        "priority": { "name": "Normal" },
+        "assignee": { "displayName": "Helen Nguyen" },
+        "updated": "2026-07-10T20:19:11.811+0700",
+        "duedate": null
+      }
+    }
+  ],
+  "isLast": true
+}

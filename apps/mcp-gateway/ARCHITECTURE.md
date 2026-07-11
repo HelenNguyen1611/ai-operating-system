@@ -106,7 +106,7 @@ Two error layers exist in MCP and must not be conflated:
 
 **Layer 2 — Tool-level errors.** A tool call that reaches the handler but fails for a domain reason (adapter unreachable, auth expired, validation failed, upstream 404). MCP represents this as a normal tool result with `isError: true`, not a JSON-RPC error — the call succeeded at the protocol level; the *operation* failed.
 
-**Proposed envelope for Layer 2** (to be adopted starting with the first adapter-backed tool, Phase 2):
+**Envelope for Layer 2** (adopted starting with the first adapter-backed tools, Phase 2 — Jira):
 
 ```jsonc
 {
@@ -120,9 +120,11 @@ Two error layers exist in MCP and must not be conflated:
 
 **Code taxonomy (namespaced, extend, don't rename):**
 - `VALIDATION_FAILED` — input rejected by schema (Section 9) before it reached an adapter.
-- `ADAPTER_UNAVAILABLE` — adapter couldn't reach the external system (network, timeout).
-- `ADAPTER_AUTH_FAILED` — adapter reached the system but was rejected (expired token, missing scope).
-- `ADAPTER_NOT_FOUND` — upstream resource doesn't exist.
+- `ADAPTER_UNAVAILABLE` — adapter couldn't reach the external system (network error, non-2xx response other than auth/not-found).
+- `ADAPTER_AUTH_FAILED` — adapter reached the system but was rejected (expired token, missing scope; Jira 401/403).
+- `ADAPTER_NOT_FOUND` — upstream resource doesn't exist (Jira 404).
+- `ADAPTER_NOT_CONFIGURED` *(added Phase 2)* — required adapter env vars are missing. Distinct from `ADAPTER_UNAVAILABLE`: this means the gateway never attempted a network call at all, not that the call failed.
+- `ADAPTER_TIMEOUT` *(added Phase 2)* — the adapter's own request timeout elapsed (`AbortController`-based, per-adapter default). Distinct from `ADAPTER_UNAVAILABLE` because it's retryable in a different sense (the same call might succeed with more time, not just on a later attempt).
 - `GATEWAY_INTERNAL` — bug in gateway code, not attributable to input or adapter.
 
 **Rule:** adapters never leak raw upstream error shapes (a raw Jira 401 body, an Axios stack trace) into tool output. Every adapter is responsible for translating its own failures into this taxonomy (see Section 7).
@@ -149,20 +151,21 @@ Two error layers exist in MCP and must not be conflated:
 **Principle (restated from `runtime/50_Remote_Gateway.md`):** the gateway owns integrations. The AI client is never assumed to provide Jira, Outlook, or any other connector.
 
 ```
-Tool handler (src/tools/jira/search_issues.ts)
+Tool handler (src/tools/jira-search-issues.ts)
         ↓ calls
 Adapter (src/adapters/jira/index.ts)
         ↓ owns auth, calls
 External SDK / HTTP client (e.g. Jira REST API)
 ```
 
-**Adapter contract (conceptual — no interface is written yet):**
+**Adapter contract, as implemented by the Jira adapter (Phase 2):**
 
-- An adapter is the **only** code in the gateway allowed to hold credentials for its external system, and the only code allowed to make network calls to it.
-- An adapter exposes domain methods (`searchIssues(jql)`, not `get(url)`) — it is not a thin HTTP passthrough. Tool handlers never construct upstream requests themselves.
-- An adapter translates **every** upstream failure into the Section 5 taxonomy before returning. A tool handler should never need to know what "Jira" returns on auth failure.
-- An adapter is responsible for its own config validation at startup (missing API token → fail fast at boot, not on first call).
-- An adapter exposes a lightweight `healthCheck()` so that a future `gateway.health_check` (or a dedicated `gateway.status`) can report per-adapter reachability without the caller needing adapter-specific knowledge. Not wired up in Phase 0; the seam is reserved.
+- An adapter is the **only** code in the gateway allowed to hold credentials for its external system, and the only code allowed to make network calls to it. (`src/adapters/jira/client.ts` is the sole holder of the Basic Auth header; no other file constructs it.)
+- An adapter exposes domain methods (`searchIssues(jql)`, `getIssue(key)`, `getMorningContext()`), not a thin HTTP passthrough. Tool handlers never construct upstream requests themselves.
+- An adapter translates **every** upstream failure into typed errors (`src/adapters/jira/errors.ts`); the tools layer then translates those into the Section 5 taxonomy (`src/tools/jira-error-mapping.ts`, shared across all three Jira tools). A tool handler never sees a raw Jira HTTP response.
+- **Deviation from the original speculation:** this section originally said "fail fast at boot" on missing config. The implemented behavior is the opposite, deliberately — `loadJiraConfig()` returns `null` rather than throwing, so the gateway still boots and `health_check`/`morning_brief` are unaffected with zero Jira configuration present. Each Jira tool checks for `null` config *per call* and returns `ADAPTER_NOT_CONFIGURED` — config is validated at call time, not boot time. This was required by "Keep Phase 1 behaviour unchanged" (Phase 2's own constraint) and is now the standing rule for any future adapter, not just Jira.
+- An adapter exposes a lightweight `healthCheck()` so that a future `gateway.health_check` (or a dedicated `gateway.status`) can report per-adapter reachability without the caller needing adapter-specific knowledge. **Still not implemented** — the Jira adapter has no `healthCheck()` method yet; this remains a reserved, unwired seam.
+- An adapter's HTTP client exposes **read methods only** — `src/adapters/jira/client.ts` has exactly one method, `getJson()`. There is structurally no `postJson`/`putJson`/`deleteJson` anywhere in the file. This is the enforcement mechanism for "no write requests, no transitions, no comments, no issue updates" — a capability that doesn't exist in code cannot be called by mistake.
 
 **What an adapter is not:** it is not a tool. Tools are the MCP-facing surface (Section 1); adapters are the integration-facing surface. A tool file imports an adapter; an adapter never imports MCP SDK types.
 
@@ -173,19 +176,23 @@ External SDK / HTTP client (e.g. Jira REST API)
 ```
 src/
   adapters/
-    jira/
-      index.ts       — public adapter API (searchIssues, getIssue, ...)
-      client.ts       — thin wrapper around the vendor SDK/HTTP client
-      mapper.ts        — upstream shape → gateway-internal shape
-      errors.ts        — upstream error → Section 5 taxonomy
-      config.ts        — env/config schema for this adapter (Zod, see Section 9)
+    jira/                  — implemented, Phase 2
+      index.ts               — public adapter API (searchIssues, getIssue, getMorningContext)
+      client.ts               — thin wrapper around fetch; getJson() only, no write methods
+      mapper.ts                — upstream shape → gateway-internal shape (JiraIssueSummary)
+      errors.ts                 — typed errors (JiraAuthError, JiraTimeoutError, ...)
+      config.ts                  — env var resolution (JIRA_BASE_URL/EMAIL/API_TOKEN); returns null, doesn't throw
     outlook/
-      (same shape)
+      (same shape — not yet implemented)
 ```
 
 **Rule:** one top-level folder per external domain under `src/adapters/`, same five-file shape every time. A new adapter is a copy of this shape, not a novel structure — consistency here is what makes the "Gateway → Adapter → External" pattern actually swappable later (e.g. replacing a REST-based Jira adapter with an MCP-passthrough one without touching any tool file).
 
-**Extraction trigger:** the `src/adapters/` folder does not exist until the first adapter is built (Phase 2). Do not scaffold it empty in Phase 0.5.
+**File naming, as actually implemented:** kebab-case (`error-envelope.ts`, not `error_envelope.ts`), matching every other file in `src/` — this section originally sketched snake_case examples; the codebase convention (kebab-case throughout) is what actually shipped and is now the rule.
+
+**Config, as actually implemented:** `config.ts` does **not** use a Zod schema (unlike Section 9's schemas, which validate MCP tool input). It's a plain `process.env` read with a presence check — see "Deviation" note in Section 7. Zod is reserved for validating data coming from an MCP client (untrusted, structured input), not for validating the operator's own environment configuration (a different trust boundary).
+
+**Extraction trigger:** the `src/adapters/` folder was created in Phase 2 with the Jira adapter — the first (and, as of Phase 2, only) adapter. Follow this exact shape for Outlook when that phase starts.
 
 ---
 
@@ -194,20 +201,23 @@ src/
 ```
 src/
   schemas/
-    jira/
-      search_issues.input.ts
-      search_issues.output.ts
+    framework/                          — Phase 1
+      morning-brief.input.ts
+    jira/                                 — Phase 2
+      search-issues.input.ts
+      get-issue.input.ts
+      get-morning-context.input.ts
     outlook/
-      ...
+      ...                                  — not yet implemented
 ```
 
-- **Library:** Zod (already a Phase 0 dependency, currently unused — this is its intended purpose).
-- **One schema pair per tool**, named after the tool's action, not the tool's full namespaced name (the folder already supplies the domain).
+- **Library:** Zod (a Phase 0 dependency, unused until Phase 1's `morning-brief.input.ts` — this is its intended purpose).
+- **One schema pair per tool**, named after the tool's action, not the tool's full namespaced name (the folder already supplies the domain). As implemented, only **input** schemas exist so far — no tool has needed an output schema yet (see the rule below on when one is required).
 - Input schemas are the single source of truth for a tool's `inputSchema` passed to `server.registerTool` — the schema is written once and consumed by both MCP registration and any internal validation, never duplicated.
 - Output schemas are optional for internal tools but **required** for any tool whose result another part of the gateway consumes programmatically (defensive parsing of your own adapter's output is cheap insurance against upstream shape drift).
 - Schemas import nothing from `adapters/` or `tools/` — they are leaves. Adapters and tools import schemas, never the reverse.
 
-**Extraction trigger:** same as adapters — created with the first schema-bearing tool (Phase 2), not scaffolded empty now.
+**Extraction trigger, corrected:** `src/schemas/` was actually created in **Phase 1** (`framework/morning-brief.input.ts`), one phase earlier than this document originally predicted — `morning_brief` needed input validation before any adapter existed. Phase 2 added the `jira/` subfolder alongside it, matching the original prediction for *that* domain.
 
 ---
 
@@ -216,17 +226,18 @@ src/
 ```
 src/
   types/
-    error-envelope.ts   — the Section 5 Layer-2 error shape, as a TS type + a builder fn
-    mcp-content.ts       — small helpers for building {type:"text", text} content blocks
-    config.ts            — shared config primitives (e.g. a generic "required env var" helper)
+    error-envelope.ts   — the Section 5 Layer-2 error shape, as a TS type + a builder fn (Phase 1)
 ```
 
-**Rule — what belongs here vs. what doesn't:**
-- `src/types/` holds cross-cutting concerns used by *multiple* domains (the error envelope shape is used by every adapter; a Jira-specific `IssueKey` type is not).
-- Domain-specific types live next to their schema (`src/schemas/jira/*.ts` exports its own types) or their adapter (`src/adapters/jira/index.ts`), not in `src/types/`.
-- If a type is needed in exactly one domain folder, it does not belong in `src/types/` even if it feels "shared" in spirit. Move it here only when a second domain needs the same shape.
+(`mcp-content.ts` and `config.ts`, sketched here originally, have not been needed — see the rule below on why nothing has been added since Phase 1.)
 
-**Extraction trigger:** `src/types/error-envelope.ts` is created the moment Section 5's Layer 2 format is first implemented (Phase 2) — this one *can* precede adapters by a few commits since tools need it before adapters do, but it does not exist today.
+**Rule — what belongs here vs. what doesn't:**
+- `src/types/` holds cross-cutting concerns used by *multiple* domains (the error envelope shape is used by `morning_brief` **and** all three Jira tools — confirmed cross-cutting, not speculative, now that a second domain actually uses it).
+- Domain-specific types live next to their schema (`src/schemas/jira/*.ts` exports its own types) or their adapter (`src/adapters/jira/mapper.ts` exports `JiraIssueSummary`), not in `src/types/`. Phase 2 followed this exactly — no Jira-specific type was added to `src/types/`.
+- If a type is needed in exactly one domain folder, it does not belong in `src/types/` even if it feels "shared" in spirit. Move it here only when a second domain needs the same shape.
+- **New in Phase 2:** the error-code *mapping* function (raw adapter error → `ErrorEnvelope`) is domain-specific translation logic, not a shared type — it lives in `src/tools/jira-error-mapping.ts`, not `src/types/`, even though it consumes the shared `ErrorCode` union. Only the taxonomy itself is shared; how a given adapter's errors map onto it is not.
+
+**Extraction trigger, corrected:** `src/types/error-envelope.ts` was actually created in **Phase 1** (needed by `morning_brief`'s `FRAMEWORK_FILE_MISSING` case), one phase earlier than originally predicted here — same pattern as the schemas correction above. Phase 2 extended its `ErrorCode` union (`ADAPTER_NOT_CONFIGURED`, `ADAPTER_TIMEOUT`) rather than creating a new file, per the "extend-only" rule in Section 5.
 
 ---
 
@@ -244,10 +255,11 @@ These are treated as a public contract from Phase 0 onward. Changing them is a *
 
 Not designed further than stated above, on purpose — designing these now would be guessing ahead of real requirements:
 
-- Concrete adapter implementations (Jira, Outlook, GitHub, anything).
+- Concrete adapter implementations for **Outlook, GitHub, or anything beyond Jira** (Jira shipped in Phase 2 — see above).
+- Adapter `healthCheck()` — the seam is reserved (Section 7) but not implemented for Jira either.
 - The Section 3 prompts-vs-tools decision.
-- Authentication/authorization scheme.
-- Logging library choice and log shipping destination.
+- Authentication/authorization scheme for the gateway's `/mcp` endpoint itself (distinct from the Jira adapter's own credentials, which Phase 2 did implement).
+- Logging library choice and log shipping destination — still two `console.log` lines total; Phase 2 did not add structured/correlated logging despite `ROADMAP.md` flagging adapters as the natural trigger point for it. Flagged as a growing gap, not resolved.
 - Session management for the stateful MCP mode.
 - Resource URI scheme *enforcement* (Section 2 states the convention; nothing consumes it yet).
 - Multi-tenant / multi-user config.

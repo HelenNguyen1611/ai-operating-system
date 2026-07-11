@@ -49,7 +49,7 @@ Each phase is gated on review of the previous one. No phase starts implementatio
 
 ---
 
-## Phase 2 — Adapters
+## Phase 2 — Adapters: Jira done, Outlook not started
 
 **Goal:** the architectural point of the whole gateway — Jira first, then Outlook, live behind the gateway instead of behind client-specific connectors.
 
@@ -57,16 +57,26 @@ Each phase is gated on review of the previous one. No phase starts implementatio
 Claude App → AI OS Gateway → Jira Adapter → Jira
 ```
 
-**Architecture obligations introduced by this phase:**
-- `src/adapters/jira/` created per the Section 8 five-file shape.
-- `src/schemas/jira/` created per Section 9 — Zod schemas stop being an unused dependency.
-- `src/types/error-envelope.ts` created per Section 10 — first real use of the Section 5 Layer-2 error format.
-- Logging strategy (Section 6) should be implemented no later than this phase — adapter failures are exactly the case correlation ids and structured logs exist for. Implementing it before the first adapter is also acceptable if Phase 1's tool extraction makes the gap obvious sooner.
-- `gateway.health_check` (or a new `gateway.status`) may be extended to aggregate `adapter.healthCheck()` results — optional for this phase, not required to exit it.
+**Shipped (Jira only):** three new read-only tools — `jira.search_issues`, `jira.get_issue`, `jira.get_morning_context` — backed by `src/adapters/jira/`. Full detail in `runtime/50_Remote_Gateway.md` → "Phase 2 Scope."
 
-**Sequencing within Phase 2:** Jira before Outlook, matching the original approval. Each adapter is its own reviewable increment, not a combined PR.
+**Architecture obligations, as actually resolved:**
+- `src/adapters/jira/` created per the Section 8 five-file shape — confirmed workable, will be copied for Outlook.
+- `src/schemas/jira/` created per Section 9. **Correction:** Zod stopped being unused one phase earlier than this document originally said — Phase 1's `morning_brief` already needed it; Phase 2 just added a second domain folder.
+- `src/types/error-envelope.ts` **already existed from Phase 1** (same correction) — Phase 2 extended its `ErrorCode` union (`ADAPTER_NOT_CONFIGURED`, `ADAPTER_TIMEOUT`) rather than creating the file.
+- Logging strategy (Section 6) — **not implemented in Phase 2**, despite this document flagging adapters as the natural trigger point. Still two `console.log` lines total, no correlation ids, no structured output. This is now a growing, explicitly-acknowledged gap rather than a deferred-and-forgotten item — strongly recommended before Outlook is added, since debugging two adapters with zero request correlation will be materially harder than debugging one.
+- `gateway.health_check` aggregating adapter health — **not implemented**, still a reserved, unwired seam (`ARCHITECTURE.md` §7). The Jira adapter has no `healthCheck()` method.
+- **New, not anticipated by this document:** `loadJiraConfig()` returns `null` on missing config rather than failing fast at boot (`ARCHITECTURE.md` §7's "Deviation" note) — required to keep Phase 1 tools working with zero Jira configuration present. This is now the standing pattern for any future adapter's config loader, not a Jira-specific choice.
+- **New:** a shared `src/tools/jira-error-mapping.ts` translates typed adapter errors (`src/adapters/jira/errors.ts`) into the MCP error envelope, reused by all three Jira tools rather than duplicated per tool.
 
-**Non-goals still held:** authentication scheme for the gateway itself (the adapter has its own credentials to the external system; that is separate from who is allowed to call the gateway — see Phase 3).
+**Verified:** `npm run typecheck` clean; `npm test` 31/31 passing (10 original Phase 1 tests unchanged — zero regression — plus 16 Jira adapter unit tests with a mocked/injected `fetch`, plus 5 Jira MCP-tool integration tests); source scan confirms no `postJson`/`putJson`/`deleteJson`/transition/comment code exists anywhere in the Jira adapter or tools; no `.env` file committed, only `.env.example` with placeholders.
+
+**Sequencing within Phase 2:** Jira shipped first, matching the original approval. **Outlook has not been started** — this phase is not closed, only its Jira increment is done. Each adapter remains its own reviewable increment, not a combined PR.
+
+**Non-goals still held:** authentication scheme for the gateway itself (the Jira adapter has its own credentials to Jira; that is separate from who is allowed to call the gateway — still Phase 3). No write/transition/comment capability — verified structurally, not just by convention.
+
+**Phase 2.1 (post-launch fix):** a real call against live Jira surfaced `HTTP 410` — Atlassian had removed `GET /rest/api/3/search`. Migrated to `GET /rest/api/3/search/jql` with cursor-based (`nextPageToken`/`isLast`) pagination, replacing the offset-based (`startAt`/`total`) model; `jira.search_issues`'s output changed `total: number` → `is_last: boolean` (a forced breaking change — Atlassian's replacement endpoint has no total-count field). This is exactly the risk this document's Jira notes flagged as worth watching — it materialized within the same review cycle, not hypothetically. Full detail: `runtime/50_Remote_Gateway.md` → "Phase 2.1" and the Operations Handbook §18.9. Lesson for Outlook: mocked tests cannot catch upstream API removals — real-endpoint verification (the manual test steps) is not optional polish, it's how this was actually caught.
+
+**Phase 2.2 (post-launch fix):** a live acceptance test showed `jira.get_morning_context`'s `assigned_open` incorrectly including many Done issues. Root cause: the original JQL (`assignee = currentUser() AND resolution = Unresolved ORDER BY updated DESC`) relied on Jira's `resolution` field to mean "not done" — unreliable in this workspace, where the Done transition doesn't set `resolution` (confirmed live: `GO-37`/`IN-152`/`IN-232`/`TRIN-34` all matched `resolution = Unresolved` while `status = "Done"`). Fixed by dropping the `resolution` clause entirely (JQL is now just `assignee = currentUser() ORDER BY updated DESC`) and filtering client-side on `status.statusCategory.key === "done"` instead — Jira's own designed-for-this field, not the workspace-dependent `resolution` field or the potentially-mislabeled `status.name`. `recently_updated` is now derived from the *unfiltered* result set rather than from `assigned_open`, so a Done issue updated moments ago can still appear there even though it's excluded from `assigned_open`; `due_today`/`overdue` remain scoped to `assigned_open` only, unchanged. No MCP tool contract changed — `statusCategory` is used for internal filtering only, never added to the public `JiraIssueSummary` output. Full detail: `runtime/50_Remote_Gateway.md` → "Phase 2.2" and the Operations Handbook §18. Lesson for Outlook: a workspace-specific field like `resolution` should never be trusted as a universal "is this done" signal without live verification — prefer the platform-normalised field (`statusCategory`) even when a workspace-specific field looks like it should work.
 
 ---
 

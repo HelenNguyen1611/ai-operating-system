@@ -1,0 +1,28 @@
+{
+  "issues": [
+    {
+      "key": "TRIN-79",
+      "fields": {
+        "summary": "Review & make guild for client - translate plugin",
+        "status": { "name": "WT In Progress" },
+        "priority": { "name": "Normal" },
+        "assignee": { "displayName": "Helen Nguyen" },
+        "updated": "2026-07-10T20:19:11.811+0700",
+        "duedate": null
+      }
+    },
+    {
+      "key": "TRIN-78",
+      "fields": {
+        "summary": "Find issue & resole bug related with link on new tab",
+        "status": { "name": "WT In Progress" },
+        "priority": { "name": "Normal" },
+        "assignee": { "displayName": "Helen Nguyen" },
+        "updated": "2026-07-09T16:35:13.322+0700",
+        "duedate": null
+      }
+    }
+  ],
+  "nextPageToken": "page2token",
+  "isLast": false
+}

@@ -1,0 +1,11 @@
+{
+  "key": "TRIN-82",
+  "fields": {
+    "summary": "Review & preparing for push live",
+    "status": { "name": "WT In Progress" },
+    "priority": { "name": "Normal" },
+    "assignee": { "displayName": "Helen Nguyen" },
+    "updated": "2026-07-10T20:19:11.811+0700",
+    "duedate": null
+  }
+}
