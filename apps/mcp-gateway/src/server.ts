@@ -1,43 +1,13 @@
 import express, { type Express, type Request, type Response } from "express";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { buildMcpServer, HEALTH_PAYLOAD, SERVICE_NAME, SERVICE_VERSION } from "./tools/index.js";
 
-export const SERVICE_NAME = "ai-operating-system-mcp-gateway";
-export const SERVICE_VERSION = "0.1.0";
+export { SERVICE_NAME, SERVICE_VERSION };
 
-const HEALTH_PAYLOAD = {
-  status: "ok",
-  service: SERVICE_NAME,
-  version: SERVICE_VERSION,
-} as const;
-
-function buildMcpServer(): McpServer {
-  const server = new McpServer({
-    name: SERVICE_NAME,
-    version: SERVICE_VERSION,
-  });
-
-  server.registerTool(
-    "health_check",
-    {
-      title: "Health Check",
-      description:
-        "Returns the gateway service status. Phase 0 compatibility spike — the only tool exposed.",
-      inputSchema: {},
-    },
-    async () => ({
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(HEALTH_PAYLOAD),
-        },
-      ],
-    }),
-  );
-
-  return server;
-}
-
+/**
+ * Pure transport wiring only — no tool logic lives here. Tools are
+ * assembled in ./tools/index.ts (Phase 1 extraction, per ROADMAP.md).
+ */
 export function createApp(): Express {
   const app = express();
   app.use(express.json());
@@ -47,7 +17,7 @@ export function createApp(): Express {
   });
 
   // Stateless mode: a fresh server + transport per request, no session state.
-  // Sufficient for Phase 0; session management is a later-phase concern.
+  // Sufficient through Phase 1; session management is a later-phase concern.
   app.post("/mcp", async (req: Request, res: Response) => {
     const server = buildMcpServer();
     const transport = new StreamableHTTPServerTransport({

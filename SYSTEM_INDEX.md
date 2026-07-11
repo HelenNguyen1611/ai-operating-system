@@ -654,6 +654,28 @@ Communication Plan
 
 ---
 
+# Remote Access
+
+## MCP Gateway
+
+Intent
+
+Connect an external AI client (e.g. Claude App) to this Operating System over MCP.
+
+Runtime
+
+50_Remote_Gateway
+
+Code
+
+apps/mcp-gateway
+
+Outputs
+
+Health Check (Phase 0)
+
+---
+
 # Runtime Routing
 
 Morning Activities
@@ -685,6 +707,14 @@ Leadership
 ↓
 
 45_Leadership_Runtime
+
+---
+
+Remote Access
+
+↓
+
+50_Remote_Gateway
 
 ---
 

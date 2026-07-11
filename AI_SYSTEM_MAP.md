@@ -458,6 +458,26 @@ Future Decisions
 
 ---
 
+# Remote Execution Path
+
+External AI clients reach this Operating System through the MCP Gateway rather than through client-specific connectors:
+
+```
+AI Client
+    ↓
+apps/mcp-gateway
+    ↓
+Runtime
+    ↓
+Commands
+    ↓
+Templates
+```
+
+See `runtime/50_Remote_Gateway.md` for scope, phase status, and the adapter direction (Gateway → Jira Adapter → Jira, etc.).
+
+---
+
 # Live Data
 
 Jira

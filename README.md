@@ -66,9 +66,22 @@ See `tests/manual/timezone-email-retrieval.md` for manual verification prompts.
 
 ---
 
+## Applications
+
+### `apps/mcp-gateway`
+
+Remote MCP Gateway — makes this Operating System reachable from external AI clients (starting with the Claude App) over the Model Context Protocol, instead of relying on client-specific connectors.
+
+Status: **Experimental (Phase 0 — compatibility spike)**. Exposes one tool, `health_check`, over Streamable HTTP. See `runtime/50_Remote_Gateway.md` for scope, non-goals, and future direction, and `apps/mcp-gateway/docs/manual-test-claude-app.md` to connect a client.
+
+Self-contained package; the repository root remains package-less.
+
+---
+
 ## Navigation
 
 - `AI_SYSTEM_MAP.md` — system architecture
 - `SYSTEM_INDEX.md` — intent → runtime → handbook routing
 - `handbook/` — knowledge layer (00–39)
 - `runtime/` — execution layer (40–49)
+- `apps/` — applications built on the framework (e.g. `apps/mcp-gateway`)

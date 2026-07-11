@@ -1,6 +1,6 @@
 # Remote Gateway
 
-Version: 0.1 (Phase 0 — compatibility spike)
+Version: 0.2 (Phase 1 — Morning Brief tool)
 
 Status: Experimental
 
@@ -72,6 +72,39 @@ Implemented — and nothing more:
 
 ---
 
+# Phase 1 Scope
+
+Implemented — and nothing more:
+
+1. A second MCP tool, `morning_brief`, alongside the unchanged `health_check`.
+2. Input: `{ "language": "en" | "vi", "detail": "brief" | "full" }`, validated with Zod.
+3. The tool loads seven fixed, repository-relative files and returns their contents as a structured JSON payload (`instructions`, `context.{config, base_workflow, runtime.{morning_runtime, context_engine, reasoning_engine}, template}`, `notes`):
+   - `config/runtime.yaml`
+   - `commands/_base/morning.base.md`
+   - `runtime/41_Morning_Runtime.md`
+   - `runtime/46_Context_Engine.md`
+   - `runtime/48_Reasoning_Engine.md`
+   - `templates/i18n/morning.en.md` **or** `templates/i18n/morning.vi.md` (selected by `language`, not both)
+4. Tool registration extracted out of `server.ts` into `src/tools/` (`health-check.ts`, `morning-brief.ts`, `index.ts`) — `server.ts` is transport wiring only, per the Phase 1 tool-extraction obligation in `apps/mcp-gateway/ROADMAP.md`.
+5. New supporting modules: `src/lib/repo-paths.ts` (safe repo-relative path resolution with containment check), `src/types/error-envelope.ts` (tool-level error format per `ARCHITECTURE.md` §5), `src/schemas/framework/morning-brief.input.ts` (Zod input schema).
+6. Tests (10 total, up from 4): server startup, `GET /health`, `tools/list` shows both tools, `health_check` invocation, `morning_brief` English end-to-end, `morning_brief` Vietnamese end-to-end, invalid-language rejection (pure loader + real MCP call), missing-file handling (pure loader, via a dedicated fixture repo under `tests/fixtures/missing-file-repo/`).
+7. `apps/mcp-gateway/docs/manual-test-claude-app.md` still applies unchanged for connecting a client; a `morning_brief` walkthrough is a candidate follow-up, not required to exit Phase 1.
+
+## Deviations from the original Phase 1 description
+
+This document's Future Direction (below) originally sketched `morning_brief(language, detail, focus)`. The approved Phase 1 implementation spec dropped `focus` and restricted `detail` to `"brief" | "full"` (excluding `"standard"`, which `commands/_base/morning.base.md` otherwise defines). Both are documented simplifications, not oversights — recorded in `apps/mcp-gateway/schemas/framework/morning-brief.input.ts` and `ROADMAP.md`. Widening the input shape is a candidate Phase 1.x follow-up.
+
+The tool is named `morning_brief`, not `framework.morning_brief` as `ARCHITECTURE.md` §1 speculated — the approved spec named it explicitly. It is documented in `ARCHITECTURE.md` as a second unnamespaced platform/framework-level tool, consistent with the `health_check` precedent.
+
+## Verified before closing Phase 1
+
+- `npm run typecheck` — clean.
+- `npm test` — 10/10 passing.
+- Source scan (`grep` across `src/`) confirms no network-client code (`fetch`, `axios`, `http(s).request`) and no reference to Jira/Outlook/Atlassian/Microsoft anywhere in the gateway.
+- `package.json` dependencies unchanged from Phase 0 (`@modelcontextprotocol/sdk`, `express`, `zod`) — no new runtime dependency was needed.
+
+---
+
 # Non-Goals (Phase 0)
 
 Explicitly **not** implemented, by decision:
@@ -97,13 +130,20 @@ Phase 0 is successful when:
 
 The last criterion is the actual point of the spike — it validates the Claude App → Gateway path before any real capability is built.
 
+## Phase 1 Success Criteria
+
+- `npm test` passes in `apps/mcp-gateway` (10 tests: the original 4 plus `morning_brief` discovery, English/Vietnamese end-to-end, invalid input, missing-file handling).
+- `morning_brief` returns all seven required files' content for both `language` values, with no call to any external connector.
+- Invalid `language`/`detail` never produces a successful payload.
+- A missing required file produces a `FRAMEWORK_FILE_MISSING` error, not a crash or a silent partial payload.
+
 ---
 
 # Future Direction
 
 Ordered, each phase gated on review of the previous:
 
-1. **Phase 1 — First real tool.** `morning_brief(language, detail, focus)` serving the framework's own files (base workflow, Runtime 41, i18n templates) as the instruction payload.
+1. **Phase 1 — First real tool. Done.** `morning_brief(language, detail)` serving the framework's own files (base workflow, Runtime 41/46/48, i18n templates) as the instruction payload. See "Phase 1 Scope" above for what shipped and how it differs from this original sketch.
 2. **Phase 2 — Adapters.** Jira adapter behind the gateway (then Outlook), so live context no longer depends on client-side connectors.
 3. **Phase 3 — Hardening.** Authentication (bearer/OAuth), session management, deployment story.
 4. **Phase 4 — Runtime orchestration.** The gateway executes runtime workflows server-side instead of shipping instructions to the client.
