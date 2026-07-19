@@ -1,3 +1,4 @@
+
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SearchIssuesInputSchema, SearchIssuesInputShape } from "../schemas/jira/search-issues.input.js";
 import { loadJiraConfig } from "../adapters/jira/config.js";
@@ -8,7 +9,7 @@ import { JiraNotConfiguredError } from "../adapters/jira/errors.js";
 
 export function registerJiraSearchIssues(server: McpServer): void {
   server.registerTool(
-    "jira.search_issues",
+    "jira_search_issues",
     {
       title: "Jira Search Issues",
       description:

@@ -11,7 +11,7 @@ import { JiraNotConfiguredError } from "../adapters/jira/errors.js";
 
 export function registerJiraMorningContext(server: McpServer): void {
   server.registerTool(
-    "jira.get_morning_context",
+    "jira_get_morning_context",
     {
       title: "Jira Morning Context",
       description:

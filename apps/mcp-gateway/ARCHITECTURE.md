@@ -30,13 +30,13 @@ There is no adapter, no schema, no shared-types module, no logger, and no versio
 
 ## 1. Tool Naming Conventions
 
-**Convention:** `<domain>.<action>`, snake_case action, lowercase domain.
+**Convention:** `<domain>_<action>`, snake_case throughout, lowercase domain. Originally specified as `<domain>.<action>` (dot-separated); revised because MCP tool names must match `^[a-zA-Z0-9_-]{1,64}$` — a literal dot is not a legal character, and a dotted name fails client-side schema validation (e.g. Claude's `FrontendRemoteMcpToolDefinition.name`) as soon as the tool is actually listed. Caught and fixed after Phase 2 shipped three dotted tool names; see `ROADMAP.md`'s Phase 2.4 entry.
 
-Examples for future phases: `jira.search_issues`, `jira.get_issue`, `outlook.search_email`, `outlook.create_draft`.
+Examples for future phases: `jira_search_issues`, `jira_get_issue`, `outlook_search_email`, `outlook_create_draft`.
 
-**Reserved domain:** `gateway.*` is reserved for platform/meta tools that describe the gateway itself, not an external system — health, version, capability introspection.
+**Reserved domain:** `gateway_` is reserved for platform/meta tools that describe the gateway itself, not an external system — health, version, capability introspection.
 
-**Exception, documented not fixed:** the Phase 0 tool is named `health_check`, not `gateway.health_check`. It predates this convention. It is **not** renamed retroactively — renaming a published tool is a breaking change for any connected client, and Phase 0's entire point was proving the client connection works. Section 4 (Versioning) governs when renames are allowed.
+**Exception, documented not fixed:** the Phase 0 tool is named `health_check`, not `gateway_health_check`. It predates this convention. It is **not** renamed retroactively — renaming a published tool is a breaking change for any connected client, and Phase 0's entire point was proving the client connection works. Section 4 (Versioning) governs when renames are allowed.
 
 **Rules:**
 - Action verbs are explicit: `search_`, `get_`, `create_`, `update_`, `list_`. Never a bare noun.
@@ -140,7 +140,7 @@ Two error layers exist in MCP and must not be conflated:
 - **Structured, not string-concatenated.** One JSON object per line: `{ts, level, msg, ...fields}`. Grep-ability over prettiness.
 - **Levels:** `error`, `warn`, `info`, `debug`. Default `info` in production, `debug` available via `LOG_LEVEL` env var.
 - **Correlation:** every `/mcp` request gets a request id (generate if the client doesn't supply one); the id is attached to every log line produced while handling that request, including inside adapters. Without this, debugging a failed tool call across an adapter boundary is guesswork.
-- **What is never logged:** request/response bodies containing tool arguments or results by default (they may carry PII or business data — Jira issue content, email bodies). Log shapes and outcomes (`tool=jira.search_issues status=ok duration_ms=142`), not payloads. A future `LOG_PAYLOADS=true` escape hatch for local debugging is acceptable; it must default off.
+- **What is never logged:** request/response bodies containing tool arguments or results by default (they may carry PII or business data — Jira issue content, email bodies). Log shapes and outcomes (`tool=jira_search_issues status=ok duration_ms=142`), not payloads. A future `LOG_PAYLOADS=true` escape hatch for local debugging is acceptable; it must default off.
 - **Access log vs application log:** HTTP-level access logging (method, path, status, duration) is a separate concern from application logging (tool execution, adapter calls) even if they end up in the same stream. Don't merge them into one log statement.
 - **No dependency added yet.** When this is implemented, prefer a minimal structured logger (e.g. `pino`) over hand-rolled JSON — but that choice belongs to the phase that implements it, not this document.
 

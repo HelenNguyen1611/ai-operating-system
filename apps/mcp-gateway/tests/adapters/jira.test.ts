@@ -22,6 +22,7 @@ const VALID_CONFIG = {
   baseUrl: "https://example.atlassian.net",
   email: "helen@wootech.co",
   apiToken: "test-token",
+  lookbackDays: 30,
 };
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -49,6 +50,7 @@ describe("loadJiraConfig — valid configuration", () => {
       baseUrl: "https://example.atlassian.net", // trailing slash stripped
       email: "helen@wootech.co",
       apiToken: "test-token",
+      lookbackDays: 30,
     });
   });
 });
@@ -64,6 +66,41 @@ describe("loadJiraConfig — missing configuration", () => {
 
   it("returns null when no Jira env vars are set at all", () => {
     expect(loadJiraConfig({})).toBeNull();
+  });
+});
+
+describe("loadJiraConfig — MORNING_CONTEXT_LOOKBACK_DAYS", () => {
+  const BASE_ENV = {
+    JIRA_BASE_URL: "https://example.atlassian.net",
+    JIRA_EMAIL: "helen@wootech.co",
+    JIRA_API_TOKEN: "test-token",
+  };
+
+  it("defaults to 30 when the env var is not set", () => {
+    const config = loadJiraConfig(BASE_ENV);
+    expect(config?.lookbackDays).toBe(30);
+  });
+
+  it("accepts a valid configured value (e.g. 7)", () => {
+    const config = loadJiraConfig({ ...BASE_ENV, MORNING_CONTEXT_LOOKBACK_DAYS: "7" });
+    expect(config?.lookbackDays).toBe(7);
+  });
+
+  it("accepts the maximum allowed value (365)", () => {
+    const config = loadJiraConfig({ ...BASE_ENV, MORNING_CONTEXT_LOOKBACK_DAYS: "365" });
+    expect(config?.lookbackDays).toBe(365);
+  });
+
+  it.each([
+    ["non-numeric", "not-a-number"],
+    ["decimal", "7.5"],
+    ["zero", "0"],
+    ["negative", "-5"],
+    ["greater than 365", "366"],
+    ["empty string", ""],
+  ])("falls back to 30 for an invalid value (%s: %s)", (_label, value) => {
+    const config = loadJiraConfig({ ...BASE_ENV, MORNING_CONTEXT_LOOKBACK_DAYS: value });
+    expect(config?.lookbackDays).toBe(30);
   });
 });
 
@@ -153,6 +190,53 @@ describe("JiraAdapter.getMorningContext — pagination", () => {
     expect(requestedPageTokens).toEqual([null, "page2token"]);
     expect(context.assigned_open.map((i) => i.key)).toEqual(["TRIN-79", "TRIN-78", "CW-118"]);
     expect(context.timezone).toBe("Asia/Ho_Chi_Minh");
+  });
+});
+
+describe("JiraAdapter.getMorningContext — configurable lookback window", () => {
+  it("uses the default 30-day window in the JQL when lookbackDays is not configured", async () => {
+    let capturedJql: string | null = null;
+    const fetchImpl = (async (url: RequestInfo | URL) => {
+      capturedJql = new URL(url as string).searchParams.get("jql");
+      return jsonResponse({ issues: [], isLast: true });
+    }) as typeof fetch;
+
+    const configWithDefault = loadJiraConfig({
+      JIRA_BASE_URL: "https://example.atlassian.net",
+      JIRA_EMAIL: "helen@wootech.co",
+      JIRA_API_TOKEN: "test-token",
+    })!;
+    const adapter = createJiraAdapter(configWithDefault, { fetchImpl });
+    await adapter.getMorningContext();
+
+    expect(capturedJql).toBe("assignee = currentUser() AND updated >= -30d ORDER BY updated DESC");
+  });
+
+  it("uses a configured lookback window (7 days) in the JQL", async () => {
+    let capturedJql: string | null = null;
+    const fetchImpl = (async (url: RequestInfo | URL) => {
+      capturedJql = new URL(url as string).searchParams.get("jql");
+      return jsonResponse({ issues: [], isLast: true });
+    }) as typeof fetch;
+
+    const configWith7DayWindow = { ...VALID_CONFIG, lookbackDays: 7 };
+    const adapter = createJiraAdapter(configWith7DayWindow, { fetchImpl });
+    await adapter.getMorningContext();
+
+    expect(capturedJql).toBe("assignee = currentUser() AND updated >= -7d ORDER BY updated DESC");
+  });
+
+  it("never reintroduces a resolution clause in the JQL", async () => {
+    let capturedJql: string | null = null;
+    const fetchImpl = (async (url: RequestInfo | URL) => {
+      capturedJql = new URL(url as string).searchParams.get("jql");
+      return jsonResponse({ issues: [], isLast: true });
+    }) as typeof fetch;
+
+    const adapter = createJiraAdapter(VALID_CONFIG, { fetchImpl });
+    await adapter.getMorningContext();
+
+    expect(capturedJql).not.toContain("resolution");
   });
 });
 

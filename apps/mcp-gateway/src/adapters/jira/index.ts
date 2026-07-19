@@ -12,18 +12,25 @@ const JIRA_DISPLAY_TIMEZONE = "Asia/Ho_Chi_Minh"; // matches config/runtime.yaml
 const DEFAULT_SEARCH_MAX_RESULTS = 25;
 const SEARCH_MAX_RESULTS_CAP = 50;
 const MORNING_CONTEXT_MAX_ITEMS = 100;
+const ISSUE_FIELDS = "summary,status,priority,assignee,updated,duedate";
+
 /**
  * Deliberately no `AND resolution = Unresolved` clause — see
  * isDoneStatusCategory()'s doc comment in mapper.ts for why that field is
  * unreliable in this workspace. Open/Done filtering happens client-side
- * (statusCategory-based) after fetching, not in JQL. The result set is
- * still bounded — ORDER BY updated DESC plus MORNING_CONTEXT_MAX_ITEMS —
- * so this pulls the N most recently active issues regardless of status,
- * which is also exactly what recently_updated needs to be able to include
- * Done issues.
+ * (statusCategory-based) after fetching, not in JQL.
+ *
+ * `updated >= -{lookbackDays}d` bounds the result set to recent activity —
+ * configurable via MORNING_CONTEXT_LOOKBACK_DAYS (see config.ts), default
+ * 30 days. This is what recently_updated draws from (the unfiltered list,
+ * so Done issues updated within the window can still appear there), and
+ * what assigned_open is filtered down from. Combined with the pagination
+ * cap (MORNING_CONTEXT_MAX_ITEMS) below, this bounds both how far back and
+ * how many issues a single call can pull.
  */
-const MORNING_CONTEXT_JQL = "assignee = currentUser() ORDER BY updated DESC";
-const ISSUE_FIELDS = "summary,status,priority,assignee,updated,duedate";
+function buildMorningContextJql(lookbackDays: number): string {
+  return `assignee = currentUser() AND updated >= -${lookbackDays}d ORDER BY updated DESC`;
+}
 
 export interface JiraSearchResult {
   issues: JiraIssueSummary[];
@@ -102,10 +109,12 @@ export class JiraAdapter {
   }
 
   async getMorningContext(): Promise<JiraMorningContext> {
+    const jql = buildMorningContextJql(this.config.lookbackDays);
+
     const rawIssues = await paginateAll(
       async (pageToken) => {
         const page = await this.client.getJson<JiraSearchResponseRaw>("/rest/api/3/search/jql", {
-          jql: MORNING_CONTEXT_JQL,
+          jql,
           maxResults: SEARCH_MAX_RESULTS_CAP,
           fields: ISSUE_FIELDS,
           nextPageToken: pageToken,

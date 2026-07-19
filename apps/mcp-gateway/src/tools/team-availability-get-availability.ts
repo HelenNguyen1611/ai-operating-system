@@ -16,9 +16,9 @@ export function registerTeamAvailabilityGetAvailability(server: McpServer): void
       title: "Team Availability",
       description:
         "Returns approved leave/availability events active on a given date (default: today), " +
-        "read from the authoritative Excel workbook that Power Automate updates after approval. " +
-        "Only rows with Approval Status = Approve are included; Reason, uploaded documents, and " +
-        "Note are never returned. Read-only — does not read Microsoft Forms directly.",
+        "read from a local JSON snapshot that Power Automate writes after filtering the source " +
+        "Excel workbook to approved rows. The snapshot never contains Reason, uploaded documents, " +
+        "Note, or approver details. Read-only.",
       inputSchema: GetAvailabilityInputShape,
     },
     async (args) => {

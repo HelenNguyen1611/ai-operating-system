@@ -60,14 +60,14 @@ async function connectMcpClient(): Promise<Client> {
 }
 
 describe("tools/list includes the new Jira tools", () => {
-  it("registers jira.search_issues, jira.get_issue, and jira.get_morning_context", async () => {
+  it("registers jira_search_issues, jira_get_issue, and jira_get_morning_context", async () => {
     const client = await connectMcpClient();
     try {
       const { tools } = await client.listTools();
       const names = tools.map((t) => t.name);
-      expect(names).toContain("jira.search_issues");
-      expect(names).toContain("jira.get_issue");
-      expect(names).toContain("jira.get_morning_context");
+      expect(names).toContain("jira_search_issues");
+      expect(names).toContain("jira_get_issue");
+      expect(names).toContain("jira_get_morning_context");
     } finally {
       await client.close();
     }
@@ -77,19 +77,19 @@ describe("tools/list includes the new Jira tools", () => {
     const client = await connectMcpClient();
     try {
       const { tools } = await client.listTools();
-      expect(tools.map((t) => t.name)).toContain("jira.search_issues");
+      expect(tools.map((t) => t.name)).toContain("jira_search_issues");
     } finally {
       await client.close();
     }
   });
 });
 
-describe("jira.* tools without configuration", () => {
-  it("jira.search_issues returns ADAPTER_NOT_CONFIGURED, not a crash or a real network call", async () => {
+describe("jira_* tools without configuration", () => {
+  it("jira_search_issues returns ADAPTER_NOT_CONFIGURED, not a crash or a real network call", async () => {
     const client = await connectMcpClient();
     try {
       const result = await client.callTool({
-        name: "jira.search_issues",
+        name: "jira_search_issues",
         arguments: { jql: "assignee = currentUser()" },
       });
       expect(result.isError).toBeTruthy();
@@ -102,11 +102,11 @@ describe("jira.* tools without configuration", () => {
     }
   });
 
-  it("jira.get_issue returns ADAPTER_NOT_CONFIGURED", async () => {
+  it("jira_get_issue returns ADAPTER_NOT_CONFIGURED", async () => {
     const client = await connectMcpClient();
     try {
       const result = await client.callTool({
-        name: "jira.get_issue",
+        name: "jira_get_issue",
         arguments: { key: "TRIN-79" },
       });
       expect(result.isError).toBeTruthy();
@@ -118,11 +118,11 @@ describe("jira.* tools without configuration", () => {
     }
   });
 
-  it("jira.get_morning_context returns ADAPTER_NOT_CONFIGURED", async () => {
+  it("jira_get_morning_context returns ADAPTER_NOT_CONFIGURED", async () => {
     const client = await connectMcpClient();
     try {
       const result = await client.callTool({
-        name: "jira.get_morning_context",
+        name: "jira_get_morning_context",
         arguments: {},
       });
       expect(result.isError).toBeTruthy();
@@ -134,11 +134,11 @@ describe("jira.* tools without configuration", () => {
     }
   });
 
-  it("rejects an invalid jira.get_issue key before any config/network concern", async () => {
+  it("rejects an invalid jira_get_issue key before any config/network concern", async () => {
     const client = await connectMcpClient();
     try {
       const result = await client.callTool({
-        name: "jira.get_issue",
+        name: "jira_get_issue",
         arguments: { key: "not-a-valid-key" },
       });
       expect(result.isError).toBeTruthy();

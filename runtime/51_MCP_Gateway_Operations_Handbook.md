@@ -1,6 +1,6 @@
 # MCP Gateway — Operations Handbook
 
-Version: 1.0 (covers Phase 1: `health_check`, `morning_brief`)
+Version: 1.1 (covers Phase 1: `health_check`, `morning_brief`; Phase 2: `jira_search_issues`, `jira_get_issue`, `jira_get_morning_context`)
 
 Companion to: `runtime/50_Remote_Gateway.md` (spec of record for phase status), `apps/mcp-gateway/ARCHITECTURE.md` (stable design conventions), `apps/mcp-gateway/ROADMAP.md` (phase plan).
 
@@ -27,6 +27,7 @@ Audience: an engineer who has never seen this project, who needs to run, verify,
 15. [Future Roadmap](#15-future-roadmap)
 16. [Engineering Principles](#16-engineering-principles)
 17. [Lessons Learned](#17-lessons-learned)
+18. [Jira Integration (Phase 2)](#18-jira-integration-phase-2)
 
 ---
 
@@ -111,39 +112,60 @@ apps/mcp-gateway/
 ├── package-lock.json
 ├── tsconfig.json               ES2022 target, Node16 module resolution, strict mode.
 ├── .gitignore                   Ignores dist/ (node_modules/ is covered by the repo root .gitignore).
+├── .env.example                Placeholders for JIRA_BASE_URL/JIRA_EMAIL/JIRA_API_TOKEN. Never real credentials.
 ├── docs/
 │   └── manual-test-claude-app.md   Step-by-step human test: connect Claude App, verify health_check.
 ├── src/
 │   ├── index.ts                 Process entry point. Reads PORT env var, starts the HTTP listener.
 │   ├── server.ts                 createApp(): Express wiring only. GET /health, POST /mcp, 405s.
 │   ├── tools/
-│   │   ├── index.ts               buildMcpServer() — assembles every tool. The only file server.ts imports from this folder.
-│   │   ├── health-check.ts        registerHealthCheck(). Owns SERVICE_NAME/SERVICE_VERSION/HEALTH_PAYLOAD.
-│   │   └── morning-brief.ts       registerMorningBrief() + the exported pure loadMorningBriefPayload() function.
+│   │   ├── index.ts                    buildMcpServer() — assembles every tool. The only file server.ts imports from this folder.
+│   │   ├── health-check.ts             registerHealthCheck(). Owns SERVICE_NAME/SERVICE_VERSION/HEALTH_PAYLOAD.
+│   │   ├── morning-brief.ts            registerMorningBrief() + the exported pure loadMorningBriefPayload() function.
+│   │   ├── jira-search-issues.ts        registerJiraSearchIssues() — Phase 2.
+│   │   ├── jira-get-issue.ts             registerJiraGetIssue() — Phase 2.
+│   │   ├── jira-morning-context.ts        registerJiraMorningContext() — Phase 2.
+│   │   └── jira-error-mapping.ts           mapJiraAdapterError() — shared by all three Jira tools, Phase 2.
+│   ├── adapters/
+│   │   └── jira/                        Phase 2. See §18.
+│   │       ├── index.ts                   JiraAdapter — searchIssues(), getIssue(), getMorningContext().
+│   │       ├── client.ts                   JiraClient — getJson() only, timeout, no write methods.
+│   │       ├── mapper.ts                    Raw Jira issue JSON → JiraIssueSummary.
+│   │       ├── errors.ts                     Typed errors (JiraAuthError, JiraTimeoutError, ...).
+│   │       └── config.ts                      loadJiraConfig() — reads JIRA_* env vars, returns null if incomplete.
 │   ├── schemas/
-│   │   └── framework/
-│   │       └── morning-brief.input.ts   Zod input schema + inferred TS type for morning_brief.
+│   │   ├── framework/
+│   │   │   └── morning-brief.input.ts   Zod input schema + inferred TS type for morning_brief.
+│   │   └── jira/                          Phase 2.
+│   │       ├── search-issues.input.ts
+│   │       ├── get-issue.input.ts
+│   │       └── get-morning-context.input.ts
 │   ├── types/
-│   │   └── error-envelope.ts     Tool-level error format (ErrorCode union + buildErrorResult()).
+│   │   └── error-envelope.ts     Tool-level error format (ErrorCode union + buildErrorResult()). Extended in Phase 2 with ADAPTER_NOT_CONFIGURED, ADAPTER_TIMEOUT.
 │   └── lib/
 │       └── repo-paths.ts          REPO_ROOT constant + resolveRepoPath() containment check.
 └── tests/
-    ├── gateway.test.ts             All 10 automated tests (see §11).
+    ├── gateway.test.ts             Phase 1's 10 tests (see §11) — tools/list assertion updated for Phase 2's 3 new tools; everything else unmodified.
+    ├── jira-tools.test.ts           Phase 2. MCP-level: tools/list includes jira_*; jira_* without config returns ADAPTER_NOT_CONFIGURED.
+    ├── adapters/
+    │   └── jira.test.ts              Phase 2. Adapter-level unit tests against an injected mock fetch — no real network call ever leaves this suite.
     └── fixtures/
-        └── missing-file-repo/       A deliberately incomplete mirror of the framework file layout, used only to test the missing-file error path. Omits runtime/48_Reasoning_Engine.md on purpose.
+        ├── missing-file-repo/       A deliberately incomplete mirror of the framework file layout, used only to test the missing-file error path. Omits runtime/48_Reasoning_Engine.md on purpose.
+        └── jira/                     Phase 2. Static mocked Jira API response bodies (issue.json, search-response.json, search-page-1.json, search-page-2.json).
 ```
 
 ### What each directory is *for*, not just what's in it
 
-- **`src/tools/`** is the MCP-facing surface. If you are adding a new tool, this is where its registration function goes. One file per tool, `kebab-case.ts`, exporting `register<PascalCaseName>(server)`.
-- **`src/schemas/`** validates tool input before any tool logic runs. Organized `schemas/<domain>/<action>.input.ts` — `framework/` is the domain for tools that serve this repository's own files. A future `schemas/jira/` would hold Jira-tool schemas.
-- **`src/types/`** holds only cross-cutting types used by more than one domain. `error-envelope.ts` qualifies because every tool (present and future) uses the same error shape. A Jira-specific type would not go here.
+- **`src/tools/`** is the MCP-facing surface. If you are adding a new tool, this is where its registration function goes. One file per tool, `kebab-case.ts`, exporting `register<PascalCaseName>(server)`. `jira-error-mapping.ts` is the one exception — it's shared translation logic, not a tool, kept in `src/tools/` (not `src/adapters/jira/`) specifically because it produces MCP-shaped results and adapters must never import MCP types (`ARCHITECTURE.md` §7).
+- **`src/adapters/`** is the integration-facing surface — the only place allowed to hold external credentials or make outbound network calls. One folder per external domain, always the same five-file shape (`index.ts`, `client.ts`, `mapper.ts`, `errors.ts`, `config.ts`). `jira/` is the first (and, as of Phase 2, only) adapter.
+- **`src/schemas/`** validates tool input before any tool logic runs. Organized `schemas/<domain>/<action>.input.ts` — `framework/` serves this repository's own files (Phase 1), `jira/` validates the three Jira tools' input (Phase 2).
+- **`src/types/`** holds only cross-cutting types used by more than one domain. `error-envelope.ts` qualifies because both `morning_brief` and all three Jira tools use the same error shape. A Jira-specific type (e.g. `JiraIssueSummary`) does not go here — it lives in `src/adapters/jira/mapper.ts` instead.
 - **`src/lib/`** holds infrastructure helpers with no MCP or domain awareness — currently just safe path resolution.
-- **`tests/fixtures/`** holds static, version-controlled input data for tests that need a controlled filesystem state (as opposed to `tests/gateway.test.ts`'s in-process HTTP server, which needs no fixture).
+- **`tests/fixtures/`** holds static, version-controlled input data for tests that need a controlled filesystem state (as opposed to `tests/gateway.test.ts`'s in-process HTTP server, which needs no fixture) or a controlled HTTP response body (`tests/fixtures/jira/*.json`, consumed by `tests/adapters/jira.test.ts` via an injected fetch mock — never a real Jira response).
 
 ### What does not exist yet (see §15)
 
-`src/adapters/` (external system integrations) and a populated `src/schemas/<external-domain>/` do not exist. Do not create them speculatively — `apps/mcp-gateway/ARCHITECTURE.md` §8/§9 states these folders are created at the moment the first adapter is actually built, not before.
+`src/adapters/outlook/` and `src/schemas/outlook/` do not exist — Jira is the only implemented adapter as of Phase 2. Do not create Outlook's folders speculatively; per `apps/mcp-gateway/ARCHITECTURE.md`, a new adapter's folders are created at the moment that adapter is actually built, following the exact shape `src/adapters/jira/` established, not before.
 
 ### Repository-root dependencies
 
@@ -946,7 +968,7 @@ This section describes **assumptions and direction only**, per `ROADMAP.md`. No 
 
 ### Phase 3 — Jira
 
-**Assumption (matches `ROADMAP.md` Phase 2, "Adapters"):** a `src/adapters/jira/` module, following the five-file shape in `ARCHITECTURE.md` §8 (`index.ts`, `client.ts`, `mapper.ts`, `errors.ts`, `config.ts`), owning Jira credentials and translating Jira's API into the gateway's existing error taxonomy. No implementation exists yet. No decision has been made about which Jira API surface (REST v3, GraphQL) it would use.
+**Done, as of Phase 2 — see [§18](#18-jira-integration-phase-2) for full operational detail.** A `src/adapters/jira/` module, following the five-file shape in `ARCHITECTURE.md` §8, owns Jira credentials and translates Jira's API into the gateway's existing error taxonomy, extended with `ADAPTER_NOT_CONFIGURED`/`ADAPTER_TIMEOUT`. Jira Cloud REST API **v3** was the surface used (not GraphQL). **Update (Phase 2.1):** the search endpoint originally used, `GET /rest/api/3/search`, was removed by Atlassian (HTTP 410) during real-world use — the hedge previously written here ("worth re-checking... before extending this adapter further") turned out to be necessary almost immediately, not a hypothetical. The adapter now calls `GET /rest/api/3/search/jql` with cursor-based pagination. Full detail in [§18.9](#189--phase-21-search-endpoint-migration).
 
 ### Phase 4 — Outlook
 
@@ -960,7 +982,7 @@ This section describes **assumptions and direction only**, per `ROADMAP.md`. No 
 
 **Assumption (matches `ROADMAP.md` Phase 4, "Runtime Orchestration"):** the gateway would execute runtime workflows server-side — applying Runtime 41's decision gates itself, calling adapters, and returning a finished brief rather than a context payload for the client's model to act on. `ROADMAP.md` is explicit that this is deliberately last, gated on adapters being proven (Phase 2/3/4 here) and authentication existing (Phase 3 in `ROADMAP.md`'s numbering) — moving reasoning from a human-supervised client model into an unsupervised server process is treated as the highest-risk step in the entire roadmap, not to be taken lightly or early.
 
-**Note on phase-numbering divergence:** this handbook was given a 6-phase future list (Context Engine, Jira, Outlook, Calendar, AI Runtime) in its brief, which does not line up one-to-one with `ROADMAP.md`'s existing 4-phase list (Adapters, Hardening, Runtime Orchestration). Rather than silently inventing a reconciliation, this is flagged explicitly: **the next planning session should reconcile these two numbering schemes**, and `ROADMAP.md` — not this handbook — should remain the authoritative phase list once that happens, per this handbook's own opening statement of precedence.
+**Note on phase-numbering divergence:** this handbook was given a 6-phase future list (Context Engine, Jira, Outlook, Calendar, AI Runtime) in its original brief, which did not line up one-to-one with `ROADMAP.md`'s 4-phase list (Adapters, Hardening, Runtime Orchestration). That divergence is now partially resolved by events: the Jira work described under this section's "Phase 3" heading shipped under `ROADMAP.md`'s "Phase 2," which is the version that actually happened and is now documented in [§18](#18-jira-integration-phase-2). The reconciliation still owed: Context Engine (this section's "Phase 2") and Calendar (this section's "Phase 5") remain unaddressed by any concrete `ROADMAP.md` entry. `ROADMAP.md` remains authoritative once that reconciliation happens, per this handbook's own opening statement of precedence.
 
 ---
 
@@ -1005,3 +1027,310 @@ Concrete, hard-won observations from Phase 0 and Phase 1 — the kind of thing t
 **A stateless server is simpler to reason about but has a real cost — know which one you're paying for.** Every `POST /mcp` request in Phase 1 rebuilds an entire `McpServer` from scratch (`buildMcpServer()` runs per-request). This is deliberately simple and was the right call for Phase 0/1's scope, but it means there is currently no way for the gateway to push a notification to a connected client, and every request re-registers both tools from zero — a cost that is invisible at 2 tools and would need revisiting well before tool count or request volume grow significantly.
 
 **Documenting a deviation at the moment it happens is cheaper than reconstructing why later.** Phase 1's `focus`-parameter removal and `detail`'s restriction to two values were both deliberate, approved simplifications — and both are recorded in three places (`runtime/50_Remote_Gateway.md`, `ROADMAP.md`, and the schema file's own code comment) specifically so that a future maintainer reading only one of those three still gets the "why," not just the "what."
+
+---
+
+## 18. Jira Integration (Phase 2)
+
+Everything in this section is additive to Phase 1 — `health_check` and `morning_brief` are byte-for-byte unchanged, and every command elsewhere in this handbook still works exactly as documented.
+
+### 18.1 — What was added
+
+Three new MCP tools, all read-only:
+
+| Tool | Input | Purpose |
+|---|---|---|
+| `jira_search_issues` | `{ jql: string, maxResults?: number }` | Run an arbitrary JQL query, get back mapped issue summaries. |
+| `jira_get_issue` | `{ key: string }` | Fetch one issue by key (e.g. `TRIN-79`). |
+| `jira_get_morning_context` | `{}` | For the configured Jira account: assigned open issues, bucketed by recency/due-date. |
+
+Backing code: `src/adapters/jira/` (the adapter — owns Jira credentials and HTTP), `src/tools/jira-*.ts` (the MCP-facing wrappers), `src/schemas/jira/` (input validation). See [§3](#3-repository-structure) for the full file listing.
+
+### 18.2 — Configuration
+
+Three environment variables are required together; a fourth is optional. See `apps/mcp-gateway/.env.example` for the authoritative, always-current placeholder file:
+
+| Variable | Required? | Example | Notes |
+|---|---|---|---|
+| `JIRA_BASE_URL` | Yes | `https://your-domain.atlassian.net` | No trailing slash (stripped automatically if present). |
+| `JIRA_EMAIL` | Yes | `you@example.com` | The Atlassian account the API token belongs to. Also the identity behind `currentUser()` in `jira_get_morning_context`'s JQL. |
+| `JIRA_API_TOKEN` | Yes | (from id.atlassian.com) | **Never your account password.** Create at https://id.atlassian.com/manage-profile/security/api-tokens |
+| `MORNING_CONTEXT_LOOKBACK_DAYS` | No (Phase 2.3) | `30` (default) | How many days back `jira_get_morning_context`'s JQL looks (`updated >= -{N}d`). Must be a positive integer, capped at 365 — any other value (missing, non-numeric, decimal, zero, negative, >365) silently falls back to 30. Unlike the three fields above, an invalid value here never causes `ADAPTER_NOT_CONFIGURED` — see [§18.11](#1811--phase-23-configurable-lookback-window). |
+
+**There is no `.env` auto-loader.** This was a deliberate Phase 2 decision (documented in `runtime/50_Remote_Gateway.md` → "Phase 2 Scope" → "Deviations"), not an oversight — no new dependency, no custom parser to maintain. To actually load these variables:
+
+```bash
+# Option A — Node's native flag (Node ≥20.6; confirmed available on the
+# installed v22.22.2)
+cd apps/mcp-gateway
+cp .env.example .env
+# edit .env with real values
+npx tsx --env-file=.env src/index.ts
+
+# Option B — export in your shell (works with the normal npm run dev)
+export JIRA_BASE_URL="https://your-domain.atlassian.net"
+export JIRA_EMAIL="you@example.com"
+export JIRA_API_TOKEN="your-real-token"
+npm run dev
+```
+
+**Never commit `.env`.** The repository root `.gitignore` already blocks `.env` and `.env.*` while explicitly allowing `.env.example` — verify this is still true (`git check-ignore -v apps/mcp-gateway/.env`) before assuming it's safe to create the file.
+
+**Graceful absence, by design:** with no Jira env vars set at all, the gateway still boots normally and `health_check`/`morning_brief` work exactly as in Phase 1. `tools/list` still shows all three `jira_*` tools (registration is unconditional — see [§18.5](#185--behavior-with-no-configuration)); only *calling* one without configuration returns a clear error.
+
+### 18.3 — Manual verification steps
+
+Run these in order after setting real credentials (Option A or B above), against a running `npm run dev` instance:
+
+**Step 1 — confirm the tools are registered:**
+
+```bash
+curl -s -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep -o '"name":"[^"]*"'
+```
+
+Expected: five matches — `health_check`, `morning_brief`, `jira_search_issues`, `jira_get_issue`, `jira_get_morning_context`.
+
+**Step 2 — a real search:**
+
+```bash
+curl -s -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+    "params": {
+      "name": "jira_search_issues",
+      "arguments": { "jql": "assignee = currentUser() ORDER BY updated DESC", "maxResults": 5 }
+    }
+  }'
+```
+
+Expected: `isError` absent/false, and a JSON body containing an `issues` array with up to 5 mapped issues plus a `total` count. If this instead returns `ADAPTER_NOT_CONFIGURED`, your environment variables were not actually loaded into the running process — restart with Option A or B above, don't just edit `.env` and expect a running process to pick it up.
+
+**Step 3 — get one issue you know exists:**
+
+```bash
+curl -s -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"jira_get_issue","arguments":{"key":"<YOUR-PROJECT>-1"}}}'
+```
+
+Replace `<YOUR-PROJECT>-1` with a real issue key from your Jira site. Expected: a single mapped issue object with `key`, `summary`, `status`, `priority`, `assignee`, `updated`, `due_date`, `url`.
+
+**Step 4 — the Morning context:**
+
+```bash
+curl -s -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"jira_get_morning_context","arguments":{}}}'
+```
+
+Expected: an object with four arrays — `assigned_open`, `recently_updated`, `due_today`, `overdue` — plus `generated_at` and `timezone: "Asia/Ho_Chi_Minh"`. Cross-check `assigned_open` against Jira's own board/filter for that account **using a status-category-based view (e.g. "not Done"), not Jira's "unresolved" quick filter** — `assigned_open` deliberately does not use `resolution`, since that field is unreliable in this workspace (see [§18.10](#1810--phase-22-status-filtering-fix)). No issue in `assigned_open` should have `status` equal to a Done-category status (e.g. `"Done"`); confirm none do.
+
+**Step 5 — confirm nothing writes.** This is a negative check — there is no tool to call that would write, by construction (see [§18.6](#186--security-notes-specific-to-jira)), so "verification" here means confirming the *absence* of capability, not running a write and checking it failed: `grep -rE "method:\s*[\"'](POST|PUT|DELETE|PATCH)" apps/mcp-gateway/src/adapters/jira/` should return nothing.
+
+**Step 6 — reconnect Claude Desktop** ([§8](#8-claude-desktop-connector) procedure) and ask it to run `jira_get_morning_context`. Compare the result to Step 4's `curl` output — they should match exactly, modulo `generated_at`.
+
+### 18.4 — Timezone normalisation
+
+`jira_get_morning_context`'s bucketing (`recently_updated`, `due_today`, `overdue`) compares dates **as they fall in Asia/Ho_Chi_Minh wall-clock time**, not the timestamp's own offset and not the host machine's local timezone. This matters concretely: an issue updated at `2026-07-10T18:00:00.000Z` (6pm UTC) falls on **11 July** in Asia/Ho_Chi_Minh (UTC+7 rolls it past midnight), even though the raw UTC date is still the 10th. Getting this wrong would misclassify an issue as "not recently updated" when, from the Ho-Chi-Minh-based user's perspective, it clearly was updated today.
+
+Implementation: `toHoChiMinhDateString()` in `src/adapters/jira/index.ts`, using `Intl.DateTimeFormat` with `timeZone: "Asia/Ho_Chi_Minh"` — no date library dependency. Directly unit-tested in `tests/adapters/jira.test.ts` with exactly this day-boundary-crossing case.
+
+Jira's `duedate` field is a plain calendar date (`YYYY-MM-DD`) with no time or timezone component at all — it requires no conversion, only a direct string comparison against `toHoChiMinhDateString(now)`.
+
+### 18.5 — Behavior with no configuration
+
+All three Jira tools follow the same sequence, matching the pattern established by `morning_brief` in Phase 1 (validate input → attempt the operation → return a structured error, never crash the request):
+
+1. Validate input against the tool's Zod schema (SDK-level, same as [§6.5](#65--toolscall-invalid-input) — invalid input never reaches configuration checking at all).
+2. Call `loadJiraConfig()`. If any of the three env vars is missing, return immediately:
+
+```json
+{"error":{"code":"ADAPTER_NOT_CONFIGURED","domain":"jira","message":"Jira is not configured: JIRA_BASE_URL, JIRA_EMAIL, and JIRA_API_TOKEN must all be set.","retryable":false}}
+```
+
+3. Only if configured, construct the adapter and make the actual Jira call.
+
+This is directly tested end-to-end in `tests/jira-tools.test.ts` by deliberately clearing `JIRA_*` from `process.env` before each test in that file — confirming both the error shape and, just as importantly, that **no network call is attempted** when configuration is absent.
+
+### 18.6 — Security notes specific to Jira
+
+Everything in [§14](#14-security) applies; this adds what's specific to the Jira adapter:
+
+- **Structurally read-only, not just by convention.** `src/adapters/jira/client.ts` has exactly one method, `getJson()`. There is no `postJson`, no `putJson`, no `deleteJson` anywhere in the file — the same "the capability doesn't exist in code" pattern Phase 1 used for filesystem writes. A future contributor cannot accidentally call a write method that was never written.
+- **No transition, comment, or update capability at any layer.** Not blocked by a permission check — simply never implemented. Verify with `grep -rE "transitions|/comment" apps/mcp-gateway/src/adapters/jira/` (expect no matches outside doc comments).
+- **Credentials live in exactly one place.** `JiraClient`'s constructor is the only code that reads `config.email`/`config.apiToken` to build the Basic Auth header. No other file — not the tools, not the mapper, not the error translator — touches the raw token.
+- **Credentials are never logged.** `src/adapters/jira/config.ts` carries an explicit code comment warning against logging the token if logging is ever added to that file. As of Phase 2, the gateway still only has the two `console.log` lines from Phase 0 ([§5](#5-running-the-gateway)) — there is no logging anywhere that could leak a token, because there is barely any logging at all yet.
+- **The API token is scoped to one Jira account, not the gateway's own identity.** Whoever's email is in `JIRA_EMAIL` is whose Jira permissions apply to every `jira_*` call — the gateway has no separate service-account concept in Phase 2. If that person's Jira permissions include write access to certain projects, that has no bearing on this integration, since the write capability doesn't exist in the adapter regardless of what the underlying account could otherwise do.
+- **Same "no auth in front of the gateway" caveat as [§14](#14-security) applies, compounded.** Anyone who can reach `/mcp` through your tunnel can now also read your Jira data (previously, an unauthenticated caller could only read six framework files). This raises the stakes of the Cloudflare Tunnel discipline in [§7](#7-cloudflare-tunnel) — do not leave a tunnel running unattended, more so now than in Phase 1.
+
+### 18.7 — Jira-specific troubleshooting
+
+Same format as [§12](#12-troubleshooting), additive entries:
+
+---
+
+**Symptom:** `jira_*` tool call returns `ADAPTER_NOT_CONFIGURED` even though you set the env vars.
+
+**Root cause:** almost always that you exported the variables in a different shell/terminal than the one running `npm run dev`, or edited `.env` without restarting a process that was started before the file existed (there is no live-reload of env vars — they're read once, at each `loadJiraConfig()` call, from whatever `process.env` the running process was given at its own startup).
+
+**Diagnosis:** in the *same terminal* running the gateway, run `echo $JIRA_BASE_URL` — if empty, the running process doesn't have it either.
+
+**Resolution:** export in the correct terminal, or restart with `--env-file` ([§18.2](#182--configuration)), then re-verify with [§18.3](#183--manual-verification-steps) Step 1.
+
+---
+
+**Symptom:** `ADAPTER_AUTH_FAILED`.
+
+**Root cause:** `JIRA_EMAIL`/`JIRA_API_TOKEN` pair rejected by Jira — expired token, revoked token, or email/token mismatch. Corresponds to a Jira HTTP 401 or 403.
+
+**Diagnosis:** the error message includes the actual HTTP status Jira returned. Test the same credentials directly: `curl -u "$JIRA_EMAIL:$JIRA_API_TOKEN" "$JIRA_BASE_URL/rest/api/3/myself"` — if this also fails outside the gateway, the credentials themselves are the problem, not gateway code.
+
+**Resolution:** generate a fresh API token at https://id.atlassian.com/manage-profile/security/api-tokens and update your env vars.
+
+---
+
+**Symptom:** `ADAPTER_NOT_FOUND` from `jira_get_issue`.
+
+**Root cause:** either the issue key genuinely doesn't exist, or it exists but the `JIRA_EMAIL` account doesn't have permission to view it (Jira's API returns 404, not 403, for issues a caller isn't allowed to see — this is a Jira platform behavior, not a gateway choice).
+
+**Diagnosis:** try the same key in the Jira web UI as the same account.
+
+**Resolution:** confirm the key is correct and that the account has project-level view permission.
+
+---
+
+**Symptom:** `ADAPTER_TIMEOUT`.
+
+**Root cause:** Jira didn't respond within the adapter's timeout (default 10 seconds, `DEFAULT_TIMEOUT_MS` in `src/adapters/jira/client.ts`) — could be genuine Jira-side slowness, a large/expensive JQL query, or a network issue between your machine and Atlassian's cloud.
+
+**Diagnosis:** retry the identical `curl` call from [§18.3](#183--manual-verification-steps) Step 2 — if it succeeds on retry, it was likely transient. If it consistently times out, try a narrower/simpler JQL first to isolate whether the query itself is expensive.
+
+**Resolution:** for a genuinely slow query, there is currently no way to raise the timeout without a code change (no `JIRA_REQUEST_TIMEOUT_MS` env var exists in Phase 2 — noted as a possible small follow-up, not yet built).
+
+---
+
+**Symptom:** `jira_search_issues` silently returns fewer issues than you expected, no error.
+
+**Root cause:** `maxResults` is capped at 50 server-side regardless of what you request ([§18.1](#181--what-was-added)) — this is not a bug, it's the documented cap (`SEARCH_MAX_RESULTS_CAP` in `src/adapters/jira/index.ts`). Unlike `jira_get_morning_context`, `jira_search_issues` does **not** paginate automatically past one page — it's a direct, bounded query tool, not a "fetch everything" tool.
+
+**Diagnosis:** check the `is_last` field in the response — `false` means more results exist beyond this page. (There is no `total` count field as of Phase 2.1 — Atlassian's replacement search endpoint doesn't return one; `is_last` only tells you *whether* more results exist, not *how many*.)
+
+**Resolution:** narrow your JQL to return fewer, more specific results, rather than expecting this tool to paginate for you. If you genuinely need "everything," that's what `jira_get_morning_context`'s internal pagination (capped at 100 items) is for, though it's fixed to the `currentUser()` JQL — it isn't a general-purpose paginated search.
+
+---
+
+**Symptom:** `jira_get_morning_context`'s `due_today`/`overdue` buckets look off by one day from what you'd expect.
+
+**Root cause:** almost certainly the timezone normalisation working as designed, not a bug — see [§18.4](#184--timezone-normalisation). A naive UTC-date comparison and an Asia/Ho_Chi_Minh comparison genuinely disagree near midnight UTC.
+
+**Diagnosis:** manually compute `toHoChiMinhDateString()` for the issue's `updated` timestamp (or just add 7 hours to the UTC timestamp by hand) and compare to today's Asia/Ho_Chi_Minh date.
+
+**Resolution:** none needed if the classification matches the timezone-aware expectation — this is working as designed. If it doesn't match even accounting for the timezone shift, that's a genuine bug worth investigating in `src/adapters/jira/index.ts`'s bucketing logic.
+
+### 18.8 — Operational checklist additions
+
+Add to [§13](#13-operational-checklist)'s **Daily startup**, after step 1 (`npm run dev`):
+
+- If Jira context is needed today: confirm `JIRA_BASE_URL`/`JIRA_EMAIL`/`JIRA_API_TOKEN` are set in the terminal running the gateway (`echo $JIRA_BASE_URL`), or restart with `--env-file=.env` ([§18.2](#182--configuration)).
+- Run [§18.3](#183--manual-verification-steps) Step 1 (`tools/list`) as part of the standard smoke test — confirm all 5 tools, not just 2.
+
+No changes to **Shutdown** — there is nothing Jira-specific to tear down (no persistent connection, no session, nothing beyond the process itself).
+
+### 18.9 — Phase 2.1: search endpoint migration
+
+**What happened:** shortly after Phase 2 shipped, a real `jira_get_morning_context` call against a live Jira Cloud site returned this (verbatim, from an actual `curl`):
+
+```json
+{"error":{"code":"ADAPTER_UNAVAILABLE","domain":"jira","message":"Jira API error 410: {\"errorMessages\":[\"请求的 API 已被移除。请迁移到 /rest/api/3/search/jql API。...\"],...}","retryable":true}}
+```
+
+Translated: *"The requested API has been removed. Please migrate to the /rest/api/3/search/jql API."* `GET /rest/api/3/search` — the endpoint both Jira tools originally used — no longer exists. This is exactly the risk flagged (but not yet acted on) earlier in this document and in `ARCHITECTURE.md`/`ROADMAP.md`: Atlassian has been actively retiring older API surfaces (the SSE MCP transport was also retired, 30 Jun 2026, noted elsewhere in this handbook), and this search endpoint followed the same pattern.
+
+**Why the mocked test suite didn't catch this:** [§11](#11-testing)'s adapter tests use an *injected* `fetch` returning fixture data shaped like what the adapter expects to receive — they verify the adapter's own logic is correct given a certain response shape, not that Jira's real API still produces that shape. This is a known, accepted limitation of mock-based testing generally, not specific to this codebase — it trades "no real network calls, fast, deterministic" ([§11](#11-testing)'s stated rationale) for "cannot detect upstream API changes." There is no automated safeguard against this class of failure in the current test suite; the only way to catch it is a real call against a real Jira instance, which is exactly what the manual verification steps in [§18.3](#183--manual-verification-steps) are for.
+
+**What changed in the code:**
+
+| | Before (removed by Atlassian) | After (Phase 2.1) |
+|---|---|---|
+| Endpoint | `GET /rest/api/3/search` | `GET /rest/api/3/search/jql` |
+| Pagination model | Offset (`startAt`, `maxResults`, `total`) | Cursor (`nextPageToken`, `isLast`) |
+| `jira_search_issues` output | `{ issues, total }` | `{ issues, is_last }` |
+
+The `total` → `is_last` change is a **breaking change to `jira_search_issues`'s output contract**, not a voluntary redesign — Atlassian's replacement endpoint does not return a total match count at all (dropped for performance). If you have any external code or prompt relying on `total`, it must be updated to use `is_last` (a boolean "more exist or not," not a count).
+
+**Assumption verified.** A live `jira_search_issues` call against `wootech.atlassian.net` (JQL `assignee = currentUser() ORDER BY updated DESC`, `maxResults: 5`) returned `HTTP 200` with 5 correctly-mapped issues and `is_last: false` — confirming `nextPageToken`/`isLast` are the real field names Jira's `/rest/api/3/search/jql` returns, not just an inference from the migration notice's error text.
+
+**Verified:** `npm run typecheck` clean; `npm test` 31/31 passing with fixtures and assertions updated to the new response shape (`tests/fixtures/jira/search-*.json`, `tests/adapters/jira.test.ts`).
+
+### 18.10 — Phase 2.2: status-filtering fix
+
+**What happened:** a live acceptance test showed `jira_get_morning_context`'s `assigned_open` incorrectly including many Done issues.
+
+**Root cause:** the original JQL used by `getMorningContext()` was:
+
+```
+assignee = currentUser() AND resolution = Unresolved ORDER BY updated DESC
+```
+
+This treats Jira's `resolution` field as a proxy for "still open." **That proxy is unreliable in this workspace** — its workflow does not set `resolution` when an issue transitions to Done. Confirmed live, via a direct `jira_search_issues` call using exactly this JQL:
+
+```
+GO-37     Done
+IN-152    Done
+IN-232    Done
+TRIN-34   Done
+```
+
+Four issues with `status: "Done"` matched `resolution = Unresolved`. The JQL clause was silently a no-op filter for a large fraction of finished work in this workspace.
+
+**Actual behaviour, as fixed** (supersedes any earlier statement in this handbook naming `resolution = Unresolved`):
+
+1. **Query.** `jql` is now `assignee = currentUser() ORDER BY updated DESC` — no `resolution` clause at all. This fetches the user's most-recently-updated issues regardless of status, bounded by the same cursor pagination described in [§18.9](#189--phase-21-search-endpoint-migration) (capped at 100 items / 20 pages). **Superseded by Phase 2.3** ([§18.11](#1811--phase-23-configurable-lookback-window)), which adds a configurable `updated >= -{lookbackDays}d` bound to this same query.
+2. **Open/Done filtering happens client-side**, not in JQL — `src/adapters/jira/mapper.ts`'s `isDoneStatusCategory()` checks `fields.status.statusCategory.key === "done"` on each raw issue. `assigned_open` excludes any issue where this is true. `statusCategory` is Jira's own platform-normalised field for exactly this purpose — always present alongside `status` in the response, no extra field request needed — and more trustworthy here than either `resolution` (proven unreliable above) or `status.name` (a status literally named `"WT Done"` was observed in this workspace with `statusCategory: "indeterminate"` — i.e. **not actually done** despite its name).
+3. **`recently_updated` no longer derives from `assigned_open`.** It's computed from the same unfiltered fetch, filtered only by date. A Done issue closed minutes ago legitimately appears in `recently_updated` even though it's excluded from `assigned_open` — deriving one from the other (the pre-fix implementation) made this impossible.
+4. **`due_today`/`overdue` are unchanged**, still computed from `assigned_open` only, same comparison logic as before this fix — a due date on a completed issue was never meant to count as "due."
+
+**No MCP tool contract changed.** `jira_get_morning_context`'s input (`{}`) and its four-array output shape are identical to before. `statusCategory` is read from the raw Jira response and used for internal filtering only — it is never added to the public `JiraIssueSummary` shape any of the three Jira tools returns.
+
+**Manual re-verification:** repeat [§18.3](#183--manual-verification-steps) Step 4 — every issue in `assigned_open` should now show a non-Done `status`. If any `status: "Done"` (or equivalent) issue still appears, the workspace may have a Done-equivalent status whose `statusCategory` is not `"done"` (the `"WT Done"`/`"indeterminate"` case above) — that is a known limitation of category-based filtering, not a regression, and would need a workspace-specific override to address (not implemented).
+
+**Verified:**
+- `npm run typecheck` clean; `npm test` 32/32 passing (31 previous + 1 new regression test, `tests/adapters/jira.test.ts` → "status filtering (regression)", using a mixed fixture of open and Done issues — one Done issue updated moments ago, one Done issue updated 30 days ago, asserting `assigned_open` excludes both, `recently_updated` includes only the recent one, and `due_today` excludes a Done issue even when its due date is today).
+- Live-verified against `wootech.atlassian.net`: a direct `jira_get_morning_context` call returned `assigned_open` with 0 issues at `status: "Done"` (previously at least 4, per the root-cause evidence above).
+
+### 18.11 — Phase 2.3: configurable lookback window
+
+**What changed:** `getMorningContext()`'s JQL gained a recency bound, and that bound became operator-configurable — the current JQL is now:
+
+```
+assignee = currentUser() AND updated >= -{lookbackDays}d ORDER BY updated DESC
+```
+
+where `{lookbackDays}` defaults to **30** and is overridable via `MORNING_CONTEXT_LOOKBACK_DAYS` ([§18.2](#182--configuration)). This supersedes every earlier statement in this handbook (§18.1, §18.9, §18.10) describing the query as `assignee = currentUser() ORDER BY updated DESC` with no `updated` bound — those described the state at the time each of those fixes shipped, not the current query.
+
+**Why:** before this change, the only bound on `getMorningContext()`'s result set was the pagination cap (`MORNING_CONTEXT_MAX_ITEMS = 100`) — for an account with heavy Jira activity, that's still potentially pulling issues from months back before hitting the cap. Bounding by `updated` first is a more direct expression of "recent Jira activity" and reduces how much has to be paginated through.
+
+**Not reintroduced:** the `resolution = Unresolved` clause that Phase 2.2 removed for being unreliable in this workspace ([§18.10](#1810--phase-22-status-filtering-fix)) stays removed. `updated >= -{lookbackDays}d` is a date bound, unrelated to and no substitute for status filtering — `assigned_open` still excludes Done issues exclusively via client-side `status.statusCategory.key !== "done"` checking, exactly as before this change.
+
+**Where the setting lives:** `src/adapters/jira/config.ts`'s `loadJiraConfig()` — the same function that resolves `JIRA_BASE_URL`/`JIRA_EMAIL`/`JIRA_API_TOKEN` — now also resolves `lookbackDays` onto the same `JiraConfig` object. This follows the codebase's one existing config pattern (one function, one resolved object per adapter) rather than introducing a second config-loading mechanism for one value.
+
+**Validation behaviour (distinct from credential validation in the same function):**
+
+| Input | Result |
+|---|---|
+| Not set | `30` (default) |
+| `"7"` | `7` |
+| `"365"` | `365` (the cap) |
+| `"366"` | `30` (over the cap, falls back) |
+| `"0"`, `"-5"` | `30` (not positive, falls back) |
+| `"7.5"` | `30` (not an integer, falls back) |
+| `"not-a-number"`, `""` | `30` (not parseable, falls back) |
+
+Unlike `JIRA_BASE_URL`/`JIRA_EMAIL`/`JIRA_API_TOKEN` (whose absence makes `loadJiraConfig()` return `null`, locking out all three Jira tools with `ADAPTER_NOT_CONFIGURED`), an invalid `MORNING_CONTEXT_LOOKBACK_DAYS` **never** causes `loadJiraConfig()` to fail — it silently resolves to the default. Setting `MORNING_CONTEXT_LOOKBACK_DAYS=abc` and calling `jira_get_morning_context` behaves identically to not setting it at all.
+
+**What did not change:** `assigned_open`/`recently_updated`/`due_today`/`overdue` semantics ([§18.10](#1810--phase-22-status-filtering-fix)) — only the time window feeding into them. No MCP tool contract changed; `jira_get_morning_context`'s input remains `{}`.
+
+**Verified:** `npm run typecheck` clean; `npm test` 44/44 passing (32 previous + 12 new: 3 valid-value config tests, 6 invalid-value-falls-back-to-30 cases, and 3 tests asserting the actual JQL string sent to Jira reflects the default window, a configured window, and never contains `"resolution"`).

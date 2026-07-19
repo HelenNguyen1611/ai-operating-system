@@ -5,13 +5,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { createApp } from "../src/server.js";
 
-const TEAM_AVAILABILITY_ENV_KEYS = [
-  "TEAM_AVAILABILITY_TENANT_ID",
-  "TEAM_AVAILABILITY_CLIENT_ID",
-  "TEAM_AVAILABILITY_CLIENT_SECRET",
-  "TEAM_AVAILABILITY_DRIVE_ID",
-  "TEAM_AVAILABILITY_ITEM_ID",
-] as const;
+const TEAM_AVAILABILITY_ENV_KEYS = ["TEAM_AVAILABILITY_SNAPSHOT_PATH", "TEAM_AVAILABILITY_MAX_AGE_MINUTES"] as const;
 
 let httpServer: Server;
 let baseUrl: string;
@@ -33,10 +27,9 @@ afterAll(async () => {
 });
 
 // Same rationale as tests/jira-tools.test.ts — exercises the "not
-// configured" path only, so the gateway never makes a real network call to
-// Microsoft Graph from this suite. Direct adapter-level behavior is
-// covered in tests/adapters/team-availability.test.ts with an injected
-// mock fetch.
+// configured" path only, so the gateway never touches the real filesystem
+// for a snapshot path from this suite. Direct adapter-level behavior is
+// covered in tests/adapters/team-availability.test.ts with temp files.
 beforeEach(() => {
   savedEnv = {};
   for (const key of TEAM_AVAILABILITY_ENV_KEYS) {
@@ -112,6 +105,19 @@ describe("team_availability_get_availability without configuration", () => {
       const result = await client.callTool({
         name: "team_availability_get_availability",
         arguments: { date: "not-a-date" },
+      });
+      expect(result.isError).toBeTruthy();
+    } finally {
+      await client.close();
+    }
+  });
+
+  it("rejects an unsupported team_scope value (only 'all' is accepted for MVP)", async () => {
+    const client = await connectMcpClient();
+    try {
+      const result = await client.callTool({
+        name: "team_availability_get_availability",
+        arguments: { team_scope: "engineering" },
       });
       expect(result.isError).toBeTruthy();
     } finally {

@@ -1,52 +1,57 @@
 /**
- * Owns Team Availability credential/config resolution, per ARCHITECTURE.md
- * §7 — "an adapter is responsible for its own config validation." Reads
+ * Owns Team Availability config resolution, per ARCHITECTURE.md §7 — "an
+ * adapter is responsible for its own config validation." Reads
  * process.env directly, same as src/adapters/jira/config.ts — no shared
  * gateway-wide config module.
  *
- * Auth is Microsoft Graph app-only (client credentials grant) against the
- * workbook's drive/item — see client.ts. driveId/itemId (not a folder path)
- * are required because Graph's client-credentials flow has no "current
- * user's OneDrive" concept; the exact drive and item must be resolved out
- * of band (e.g. via Graph Explorer or the workbook's sharing link) and
- * supplied directly. This is an open item from the investigation baseline —
- * see runtime docs / ROADMAP for Team Availability.
- *
- * Never logs a secret. If you add logging here later, redact
- * TEAM_AVAILABILITY_CLIENT_SECRET — do not print it, even partially.
+ * The data source is a local JSON file (a OneDrive-synced folder in
+ * production) that Power Automate writes after filtering the source Excel
+ * workbook to approved rows — see mapper.ts for the snapshot contract.
+ * There is no Microsoft Graph / Azure AD credential involved.
  */
 export interface TeamAvailabilityConfig {
-  tenantId: string;
-  clientId: string;
-  clientSecret: string;
-  driveId: string;
-  itemId: string;
-  /** Excel table name (Graph object name, e.g. "OfficeForms.Table"), not the worksheet name. */
-  tableName: string;
+  snapshotPath: string;
+  /** Raw env value, unparsed — see parseMaxAgeMinutes(). Deliberately not resolved here (see that function's doc comment). */
+  maxAgeMinutesRaw: string | undefined;
 }
 
-const DEFAULT_TABLE_NAME = "OfficeForms.Table";
-
 /**
- * Returns null (never throws) when required configuration is incomplete,
- * so the gateway can still boot and serve other tools with no Team
- * Availability credentials present at all — same contract as
- * loadJiraConfig(). tableName always has a value (falls back to
- * DEFAULT_TABLE_NAME) since it's a tunable with a safe default, not a
- * credential.
+ * Returns null (never throws) when TEAM_AVAILABILITY_SNAPSHOT_PATH is
+ * unset, so the gateway can still boot and serve other tools with Team
+ * Availability entirely unconfigured — same contract as loadJiraConfig().
  */
 export function loadTeamAvailabilityConfig(env: NodeJS.ProcessEnv = process.env): TeamAvailabilityConfig | null {
-  const tenantId = env.TEAM_AVAILABILITY_TENANT_ID?.trim();
-  const clientId = env.TEAM_AVAILABILITY_CLIENT_ID?.trim();
-  const clientSecret = env.TEAM_AVAILABILITY_CLIENT_SECRET?.trim();
-  const driveId = env.TEAM_AVAILABILITY_DRIVE_ID?.trim();
-  const itemId = env.TEAM_AVAILABILITY_ITEM_ID?.trim();
-
-  if (!tenantId || !clientId || !clientSecret || !driveId || !itemId) {
+  const snapshotPath = env.TEAM_AVAILABILITY_SNAPSHOT_PATH?.trim();
+  if (!snapshotPath) {
     return null;
   }
 
-  const tableName = env.TEAM_AVAILABILITY_TABLE_NAME?.trim() || DEFAULT_TABLE_NAME;
+  return { snapshotPath, maxAgeMinutesRaw: env.TEAM_AVAILABILITY_MAX_AGE_MINUTES };
+}
 
-  return { tenantId, clientId, clientSecret, driveId, itemId, tableName };
+export type MaxAgeResult =
+  | { kind: "disabled" }
+  | { kind: "enabled"; minutes: number }
+  | { kind: "invalid"; raw: string };
+
+/**
+ * Deliberately separate from loadTeamAvailabilityConfig(): config loading
+ * never throws (boot must never fail), but an invalid max-age value is a
+ * real misconfiguration that must not be silently downgraded to
+ * "disabled" — the caller (TeamAvailabilityAdapter) turns "invalid" into a
+ * thrown TeamAvailabilityConfigInvalidError at call time instead, per the
+ * "surface it, don't hide it" requirement.
+ */
+export function parseMaxAgeMinutes(raw: string | undefined): MaxAgeResult {
+  if (raw === undefined || raw.trim() === "") {
+    return { kind: "disabled" };
+  }
+
+  const trimmed = raw.trim();
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return { kind: "invalid", raw: trimmed };
+  }
+
+  return { kind: "enabled", minutes: parsed };
 }

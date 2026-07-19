@@ -56,16 +56,17 @@ describe("GET /health", () => {
 });
 
 describe("MCP tool discovery", () => {
-  it("lists health_check, morning_brief, and the three jira.* tools (Phase 2)", async () => {
+  it("lists health_check, morning_brief, the three jira_* tools (Phase 2), and team_availability_get_availability", async () => {
     const client = await connectMcpClient();
     try {
       const { tools } = await client.listTools();
       expect(tools.map((t) => t.name).sort()).toEqual([
         "health_check",
-        "jira.get_issue",
-        "jira.get_morning_context",
-        "jira.search_issues",
+        "jira_get_issue",
+        "jira_get_morning_context",
+        "jira_search_issues",
         "morning_brief",
+        "team_availability_get_availability",
       ]);
     } finally {
       await client.close();

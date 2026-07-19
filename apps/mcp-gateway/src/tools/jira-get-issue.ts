@@ -8,7 +8,7 @@ import { JiraNotConfiguredError } from "../adapters/jira/errors.js";
 
 export function registerJiraGetIssue(server: McpServer): void {
   server.registerTool(
-    "jira.get_issue",
+    "jira_get_issue",
     {
       title: "Jira Get Issue",
       description:

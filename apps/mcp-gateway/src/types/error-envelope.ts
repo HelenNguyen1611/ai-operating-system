@@ -17,6 +17,13 @@ export type ErrorCode =
   | "ADAPTER_NOT_CONFIGURED"
   | "ADAPTER_TIMEOUT"
   | "FRAMEWORK_FILE_MISSING"
+  /** A configuration value is present but invalid (as opposed to ADAPTER_NOT_CONFIGURED's "nothing is set"). Added for Team Availability. */
+  | "ADAPTER_CONFIG_INVALID"
+  /** Added for Team Availability (local snapshot file adapter) — see src/adapters/team-availability/errors.ts. */
+  | "SNAPSHOT_NOT_FOUND"
+  | "SNAPSHOT_INVALID"
+  | "SNAPSHOT_STALE"
+  | "SNAPSHOT_READ_FAILED"
   | "GATEWAY_INTERNAL";
 
 export interface ErrorEnvelope {

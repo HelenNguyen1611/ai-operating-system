@@ -1,161 +1,64 @@
-import type { TeamAvailabilityConfig } from "./config.js";
+import { readFile } from "node:fs/promises";
 import {
-  TeamAvailabilityApiError,
-  TeamAvailabilityAuthError,
-  TeamAvailabilityNotFoundError,
-  TeamAvailabilityTimeoutError,
+  TeamAvailabilitySnapshotInvalidError,
+  TeamAvailabilitySnapshotNotFoundError,
+  TeamAvailabilitySnapshotReadFailedError,
 } from "./errors.js";
+import { SnapshotSchema, type Snapshot } from "./mapper.js";
 
-const DEFAULT_TIMEOUT_MS = 10_000;
-const GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0";
-const GRAPH_SCOPE = "https://graph.microsoft.com/.default";
-
-export interface TeamAvailabilityClientOptions {
-  /** Injected for tests — never a real network call in the test suite. */
-  fetchImpl?: typeof fetch;
-  timeoutMs?: number;
-}
-
-/** A single Excel table row as returned by Graph, before header-zipping. */
-export interface TeamAvailabilityTableData {
-  headers: string[];
-  rows: unknown[][];
-}
-
-interface GraphTokenResponse {
-  access_token: string;
-}
-
-interface GraphColumnsResponse {
-  value: { name: string; index: number }[];
-}
-
-interface GraphRowsResponse {
-  value: { index: number; values: unknown[][] }[];
+export interface TeamAvailabilitySnapshotReaderOptions {
+  /** Injected for tests — reads a real file by default. */
+  readFileImpl?: (path: string, encoding: "utf-8") => Promise<string>;
 }
 
 /**
- * Thin, read-only wrapper around Microsoft Graph (workbook table access
- * only). Deliberately exposes no write method — there is structurally no
- * postJson/patchJson/deleteJson anywhere in this file, mirroring
+ * Thin, read-only wrapper around the local snapshot file (a OneDrive-synced
+ * folder in production). Deliberately exposes no write method — there is
+ * structurally no writeSnapshot() anywhere in this file, mirroring
  * src/adapters/jira/client.ts's "the capability doesn't exist in code"
- * pattern. This adapter must never write back to the workbook; Power
- * Automate owns writes.
+ * pattern. Power Automate owns writes to this file; this adapter must
+ * never modify it.
  *
- * Auth: Microsoft Graph app-only client-credentials grant (tenant-wide app
- * registration), not delegated/user auth — there is no interactive user in
- * this flow. A fresh token is requested per TeamAvailabilityClient call;
- * no cross-request token cache, matching the adapter's per-request
- * construction (see index.ts / tool handler).
+ * Named client.ts (not renamed) to keep the same five-file adapter shape
+ * every adapter in this codebase follows (config/client/mapper/errors/
+ * index, per ARCHITECTURE.md §8) — its role is a local-fs reader now, not
+ * an HTTP client, but the shape stays consistent.
  */
-export class TeamAvailabilityClient {
-  private readonly fetchImpl: typeof fetch;
-  private readonly timeoutMs: number;
+export class TeamAvailabilitySnapshotReader {
+  private readonly readFileImpl: (path: string, encoding: "utf-8") => Promise<string>;
 
-  constructor(
-    private readonly config: TeamAvailabilityConfig,
-    options: TeamAvailabilityClientOptions = {},
-  ) {
-    this.fetchImpl = options.fetchImpl ?? fetch;
-    this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  constructor(options: TeamAvailabilitySnapshotReaderOptions = {}) {
+    this.readFileImpl = options.readFileImpl ?? ((path, encoding) => readFile(path, encoding));
   }
 
-  private async request(url: string, init: RequestInit): Promise<Response> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-
+  async readSnapshot(snapshotPath: string): Promise<Snapshot> {
+    let text: string;
     try {
-      return await this.fetchImpl(url, { ...init, signal: controller.signal });
+      text = await this.readFileImpl(snapshotPath, "utf-8");
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new TeamAvailabilityTimeoutError(this.timeoutMs);
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        throw new TeamAvailabilitySnapshotNotFoundError(snapshotPath);
       }
-      throw new TeamAvailabilityApiError(
-        null,
-        `Network error calling Microsoft Graph: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
-  private async getAccessToken(): Promise<string> {
-    const tokenUrl = `https://login.microsoftonline.com/${encodeURIComponent(this.config.tenantId)}/oauth2/v2.0/token`;
-    const body = new URLSearchParams({
-      client_id: this.config.clientId,
-      client_secret: this.config.clientSecret,
-      scope: GRAPH_SCOPE,
-      grant_type: "client_credentials",
-    });
-
-    const response = await this.request(tokenUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString(),
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      throw new TeamAvailabilityAuthError(response.status);
-    }
-    if (!response.ok) {
-      const text = await response.text().catch(() => "");
-      throw new TeamAvailabilityApiError(
-        response.status,
-        `Microsoft identity token request failed (HTTP ${response.status}): ${text.slice(0, 500)}`,
+      throw new TeamAvailabilitySnapshotReadFailedError(
+        snapshotPath,
+        error instanceof Error ? error.message : String(error),
       );
     }
 
-    const json = (await response.json()) as GraphTokenResponse;
-    return json.access_token;
-  }
-
-  private async getGraphJson<T>(path: string, token: string): Promise<T> {
-    const response = await this.request(`${GRAPH_BASE_URL}${path}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      throw new TeamAvailabilityAuthError(response.status);
-    }
-    if (response.status === 404) {
-      throw new TeamAvailabilityNotFoundError(path);
-    }
-    if (!response.ok) {
-      const text = await response.text().catch(() => "");
-      throw new TeamAvailabilityApiError(
-        response.status,
-        `Microsoft Graph API error ${response.status}: ${text.slice(0, 500)}`,
+    let json: unknown;
+    try {
+      json = JSON.parse(text);
+    } catch (error) {
+      throw new TeamAvailabilitySnapshotInvalidError(
+        `not valid JSON (${error instanceof Error ? error.message : String(error)})`,
       );
     }
 
-    return (await response.json()) as T;
-  }
+    const parsed = SnapshotSchema.safeParse(json);
+    if (!parsed.success) {
+      throw new TeamAvailabilitySnapshotInvalidError(parsed.error.message);
+    }
 
-  /**
-   * Fetches column names (in table order) and all row values for the given
-   * Excel table. Two Graph calls: columns are fetched separately rather
-   * than assuming a hardcoded column order, so a reordered (but not
-   * renamed) column in the workbook doesn't silently corrupt the mapping —
-   * mapper.ts then zips headers[i] -> row[i] by name.
-   */
-  async getTableData(tableName: string): Promise<TeamAvailabilityTableData> {
-    const base = `/drives/${encodeURIComponent(this.config.driveId)}/items/${encodeURIComponent(
-      this.config.itemId,
-    )}/workbook/tables/${encodeURIComponent(tableName)}`;
-
-    const token = await this.getAccessToken();
-    const [columns, rowsResponse] = await Promise.all([
-      this.getGraphJson<GraphColumnsResponse>(`${base}/columns`, token),
-      this.getGraphJson<GraphRowsResponse>(`${base}/rows`, token),
-    ]);
-
-    const headers = [...columns.value].sort((a, b) => a.index - b.index).map((column) => column.name);
-    const rows = rowsResponse.value.map((row) => row.values[0] ?? []);
-
-    return { headers, rows };
+    return parsed.data;
   }
 }

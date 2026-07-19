@@ -28,9 +28,9 @@ curl -s http://localhost:3000/health
 |---|---|---|---|
 | `health_check` | 0 | none | No |
 | `morning_brief` | 1 | `{ language: "en"\|"vi", detail: "brief"\|"full" }` | No |
-| `jira.search_issues` | 2 | `{ jql: string, maxResults?: number }` | Yes |
-| `jira.get_issue` | 2 | `{ key: string }` | Yes |
-| `jira.get_morning_context` | 2 | `{}` | Yes |
+| `jira_search_issues` | 2 | `{ jql: string, maxResults?: number }` | Yes |
+| `jira_get_issue` | 2 | `{ key: string }` | Yes |
+| `jira_get_morning_context` | 2 | `{}` | Yes |
 
 All five are read-only — see `ARCHITECTURE.md` and the Security section of the Operations Handbook for how that's enforced structurally, not just by convention.
 
@@ -50,7 +50,7 @@ There is **no automatic `.env` loading** — this is deliberate (see `ARCHITECTU
 npx tsx --env-file=.env src/index.ts
 ```
 
-Without Jira configured, `health_check` and `morning_brief` work exactly as before, and the three `jira.*` tools still appear in `tools/list` but return a clear `ADAPTER_NOT_CONFIGURED` error when called — the gateway never crashes or silently degrades. Full detail: `runtime/51_MCP_Gateway_Operations_Handbook.md` §18.
+Without Jira configured, `health_check` and `morning_brief` work exactly as before, and the three `jira_*` tools still appear in `tools/list` but return a clear `ADAPTER_NOT_CONFIGURED` error when called — the gateway never crashes or silently degrades. Full detail: `runtime/51_MCP_Gateway_Operations_Handbook.md` §18.
 
 ## Documentation map
 
