@@ -97,7 +97,9 @@ export async function loadMorningBriefPayload(
       "runtime.morning_runtime, runtime.context_engine, and runtime.reasoning_engine, " +
       `for language="${input.language}" and detail="${input.detail}". Format the ` +
       "response using context.template. This payload contains framework context " +
-      "only — no live data. Retrieve calendar/Jira/email context separately before producing the brief.",
+      "only — no live data. Retrieve calendar/Jira/email/team-availability context " +
+      "separately (call team_availability_get_availability for who is on approved " +
+      "leave today) before producing the brief.",
     context: {
       config,
       base_workflow: baseWorkflow,
@@ -109,7 +111,8 @@ export async function loadMorningBriefPayload(
       template,
     },
     notes: [
-      "This tool does not call Jira, Outlook, Calendar, or any external connector — Phase 1 scope.",
+      "This tool does not call Jira, Outlook, Calendar, Team Availability, or any external " +
+        "connector — Phase 1 scope.",
       "The gateway does not execute the Morning workflow itself; it only loads and returns framework context.",
       'Only detail="brief" and detail="full" are supported in Phase 1 ("standard" is not yet exposed by this tool).',
     ],
