@@ -23,7 +23,7 @@ Read and follow `runtime/41_Morning_Runtime.md` exactly. Never skip Runtime 41.
 Apply supporting engines only as Runtime 41 directs:
 
 - `runtime/46_Context_Engine.md` — select relevant context, apply Context Budget, discard noise
-- `runtime/48_Reasoning_Engine.md` — structured prioritisation and recommendations
+- `runtime/48_Reasoning_Engine.md` — structured prioritisation (Eisenhower Matrix), recommendations, and confidence
 - `runtime/49_Evolution_Engine.md` — capture learning (full mode, or one line in standard if a pattern is obvious)
 
 Use `SYSTEM_INDEX.md` when routing intent to additional handbooks or runtimes.
@@ -123,7 +123,7 @@ Run the Runtime 41 workflow internally:
 2. Review calendar
 3. Review Jira
 4. Review communication
-5. Identify priorities (respect user focus context)
+5. Identify priorities — apply Eisenhower Matrix from `runtime/48_Reasoning_Engine.md` (Daily Prioritisation); classify candidates per Runtime 41 Step 6; then select Top 3 and First Action (respect user focus context)
 6. Identify blockers and risks
 7. Prepare stand-up
 8. Suggest execution plan

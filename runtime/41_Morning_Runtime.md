@@ -366,17 +366,70 @@ Use `config/runtime.yaml` email search window (`last_36_hours`) — not natural-
 
 # Step 6 — Identify Priorities
 
-Recommend top priorities based on:
+Apply the **Eisenhower Matrix** from `runtime/48_Reasoning_Engine.md` (Daily Prioritisation section). Use the signals below as **inputs** to urgency and importance scoring — do not replace Eisenhower with this ordered list.
+
+## 6.1 — Gather Candidate Tasks
+
+Collect candidates from all available sources:
+
+- Jira — assigned open, blocked, due today, overdue, recently updated (via `jira_get_morning_context` buckets when available)
+- Communication — emails, Teams, or messages requiring action today
+- Calendar — meeting prep, deployment windows, release checkpoints
+- Team availability — dependencies affected by who is absent or unavailable
+- User **focus context** from the invoking command
+
+Include non-Jira tasks (email actions, meeting prep) as first-class candidates with a clear title and source.
+
+## 6.2 — Dedupe
+
+When the same work appears in multiple places (e.g. one Jira issue in both `assigned_open` and `due_today`, or an email about the same issue key), merge into **one candidate** and combine evidence.
+
+## 6.3 — Classify (Eisenhower)
+
+For each candidate, apply Runtime 48:
+
+- score urgency and importance from evidence
+- assign quadrant (Q1–Q4)
+- fill the internal reasoning contract (quadrant, action, evidence, confidence, missing_signals)
+- treat Jira `priority` as a secondary signal only
+
+Use these Morning-specific inputs when scoring **importance**:
 
 1. Blockers
 2. Delivery risk
 3. Client commitments
-4. Due dates
-5. Dependencies
-6. Business impact
-7. Available focus time
+4. Dependencies affecting others
+5. Business impact
+6. Available focus time (for scheduling Q2 — not a substitute for importance)
 
-Explain why each priority matters.
+Use these inputs when scoring **urgency**:
+
+- due dates and Jira `due_today` / `overdue` buckets
+- same-day commitments from communication
+- imminent meetings, deployments, or releases
+- production incidents
+- stakeholders directly waiting
+
+## 6.4 — Order and Select Top 3
+
+Order classified tasks within and across quadrants per Runtime 48 (Conflict Handling, Selecting Top 3).
+
+Select **Top 3** flexibly — valid outcomes include zero, one, or multiple Q1 items. Do not force a fixed quadrant mix.
+
+Each Top 3 item must include a short **why** grounded in evidence.
+
+## 6.5 — First Action and Q2 Focus
+
+Choose **First Action** per Runtime 48 (prefer highest-evidence Q1; if none, best Q2).
+
+Assign a **deep-work or focus block** for the highest-evidence Q2 item when calendar allows.
+
+## 6.6 — Q3 and Q4 Handling
+
+- **Q3:** suggest delegate, coordinate, batch, or redirect to the correct owner — never auto-assign or send on the user's behalf.
+- **Q4:** mention in **full mode** or when the user needs to consciously deprioritise misleading work; suggest defer or review only — never auto-delete or auto-close.
+
+If no true Q1 exists, state that clearly rather than inventing urgency.
 
 ---
 
@@ -417,10 +470,11 @@ Recommend a realistic plan for the day.
 
 Include:
 
-- first action
-- top 3 priorities
+- first action (from Step 6.5 — highest-evidence Q1, or best Q2 if no true Q1)
+- top 3 priorities (with Eisenhower tags and evidence-backed why)
+- deep work block for primary Q2 item when calendar allows
+- Q3 batch or coordination windows (suggest only — no auto-assign)
 - meeting preparation
-- deep work blocks
 - follow-up actions
 
 Keep the plan practical.
@@ -476,9 +530,16 @@ Only stop execution when there is insufficient information to produce meaningful
 
 ## Gate 2 — Priority Clear?
 
-Proceed when top priorities are clear.
+Proceed when:
+
+- Top 3 items each have **evidence-backed why** and a valid Eisenhower tag (Q1–Q4) where applicable
+- quadrant assignments are **consistent** with Runtime 48 — no fake urgency to fill Q1
+- **confidence** is reflected when evidence is thin (medium/low overall confidence or per-item caveats)
+- First Action is identified and aligned with the best Q1 or Q2 candidate
 
 If priorities conflict, recommend a decision or ask for clarification.
+
+Do not proceed with Top 3 that rely on keyword guessing or Jira `priority` alone.
 
 ---
 
@@ -670,9 +731,11 @@ Communication risks.
 
 ### 6. Recommended Priorities
 
-Top priorities.
+Top 3 priorities with Eisenhower quadrant tags (`[Q1]`–`[Q4]`) and evidence-backed why.
 
-Explain why.
+In full mode, optionally include a mini Eisenhower Matrix (see `handbook/10_Morning_Brief.md`).
+
+Q4 items are review suggestions only — not automatic deletions or closures.
 
 ---
 

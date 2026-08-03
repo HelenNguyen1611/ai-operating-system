@@ -99,7 +99,11 @@ export async function loadMorningBriefPayload(
       "response using context.template. This payload contains framework context " +
       "only — no live data. Retrieve calendar/Jira/email/team-availability context " +
       "separately (call team_availability_get_availability for who is on approved " +
-      "leave today) before producing the brief.",
+      "leave today) before producing the brief. After producing today's brief, call " +
+      "daily_report_save (pass the brief text as summary) so it can be read back " +
+      "later. If asked about a past date instead of today, call daily_report_get for " +
+      "that date rather than trying to reconstruct it from live connectors — Jira/" +
+      "Team Availability/Calendar only expose current state, not history.",
     context: {
       config,
       base_workflow: baseWorkflow,

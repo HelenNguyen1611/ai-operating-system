@@ -24,6 +24,9 @@ export type ErrorCode =
   | "SNAPSHOT_INVALID"
   | "SNAPSHOT_STALE"
   | "SNAPSHOT_READ_FAILED"
+  /** Added for Daily Report (local per-day snapshot adapter) — see src/adapters/daily-report/errors.ts. */
+  | "DAILY_REPORT_NOT_FOUND"
+  | "DAILY_REPORT_INVALID"
   | "GATEWAY_INTERNAL";
 
 export interface ErrorEnvelope {

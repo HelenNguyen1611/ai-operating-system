@@ -185,23 +185,59 @@ Only include communication requiring action.
 
 # Section 6 — Recommended Priorities
 
-Recommend:
+Apply the Eisenhower Matrix from `runtime/48_Reasoning_Engine.md` during Runtime 41 Step 6 before selecting Top 3.
 
-Priority 1
+## Output Rules
 
-Priority 2
+### Brief and Standard Mode
 
-Priority 3
+Present **Top 3 only** — the primary priority output.
 
-Explain why.
+For each item:
+
+- prefix with Eisenhower tag: `[Q1]`, `[Q2]`, `[Q3]`, or `[Q4]` when useful (Q4 in Top 3 is rare)
+- include a short **why** grounded in evidence (due date, blocker, commitment, bucket, calendar — not keyword guessing)
+- do **not** show the full matrix by default
+
+Valid Top 3 distributions include **zero Q1**, **one Q1**, or **multiple Q1** — follow evidence, not a fixed recipe.
+
+### Full Mode
+
+May additionally include:
+
+- **Mini Eisenhower Matrix** — four quadrants with bullet lists of classified candidates
+- per-item or overall **confidence** when evidence is thin
+- **missing context** that would change classification
+- **Q4** review suggestions (defer, merge duplicate, flag obsolete) — always as recommendations for human confirmation, never as automatic delete or close
+
+## Distinction: Jira Priority vs Eisenhower
+
+Jira's `priority` field (Normal, High, etc.) is **not** the same as Eisenhower Importance or quadrant. Use it only as a secondary signal alongside due dates, blockers, dependencies, and communication evidence.
+
+## Inputs (via Runtime 41)
 
 Recommendations should consider:
 
-- urgency
-- business impact
-- dependencies
-- blockers
-- available team members
+- urgency (overdue, due today, same-day commitments, incidents)
+- business impact and delivery risk
+- dependencies and blockers
+- client commitments
+- available team members and focus time
+
+## Examples (Brief / Standard Top 3)
+
+1. `[Q1]` TRIN-82 — Review before 15:00 release window; blocking deploy (due today, client path).
+2. `[Q1]` Reply to Travis — EOD response committed in email thread (same-day commitment).
+3. `[Q2]` UP-179 — Ownership UI; important but no due today; schedule deep work 10:00–12:00.
+
+## Example (Full Mode — Mini Matrix)
+
+| | Important | Not Important |
+|---|---|---|
+| **Urgent** | **Q1:** TRIN-82 release review | **Q3:** PM ping on CW-121 — coordinate, don't implement today |
+| **Not Urgent** | **Q2:** UP-179 deep work block | **Q4:** Docs tidy — defer unless focus says otherwise |
+
+Confidence: Medium — Jira available; calendar partial.
 
 ---
 
@@ -299,6 +335,14 @@ Before presenting the Morning Brief, verify:
 
 ✓ Recommendations are actionable.
 
+✓ Top 3 items have Eisenhower tags and evidence-backed why where applicable.
+
+✓ No fake urgency invented to fill Q1.
+
+✓ Jira `priority` is not used as a direct Eisenhower substitute.
+
+✓ Q3/Q4 suggestions do not auto-assign, auto-close, or auto-delete.
+
 ✓ No unsupported assumptions are presented as facts.
 
 ---
@@ -328,9 +372,9 @@ Include only:
 
 - Team Availability
 - Calendar Highlights
-- Top 3 Priorities
+- Top 3 Priorities (each with `[Q1]`–`[Q4]` tag and short why)
 - Critical Risks
-- First Recommended Action
+- First Recommended Action (aligned with best Q1 or Q2)
 
 This mode is intended for quickly starting the workday.
 
