@@ -36,17 +36,23 @@ describe("buildTeamSummary", () => {
     expect(summary.line_en).toContain("2025-08-04");
   });
 
-  it("lists people grouped by availability type", () => {
+  it("lists people grouped by availability type with pending note", () => {
     const summary = buildTeamSummary(
       result({
         events: [
-          { name: "Helen Nguyen", startDate: "2026-08-06", endDate: "2026-08-06", availabilityType: "Work from home" },
-          { name: "Alice", startDate: "2026-08-06", endDate: "2026-08-08", availabilityType: "Annual Leave" },
+          {
+            name: "Alice Nguyen",
+            startDate: "2026-08-06",
+            endDate: "2026-08-07",
+            availabilityType: "Annual Leave",
+            approved: false,
+          },
         ],
       }),
     );
-    expect(summary.line_en).toContain("Helen Nguyen");
-    expect(summary.line_en).toContain("Work from home");
-    expect(summary.line_en).toContain("Alice");
+    expect(summary.line_en).toContain("Alice Nguyen");
+    expect(summary.line_en).toContain("pending approval");
+    expect(summary.line_vi).toContain("chưa approve");
+    expect(summary.warning).toContain("pending");
   });
 });

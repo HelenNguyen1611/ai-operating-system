@@ -30,7 +30,7 @@ English output by default.
 
 Natural-language triggers ("good morning", "morning brief") use the **same Morning Card** as this command.
 
-**Claude App:** default detail is **standard** unless the user asks for `brief` or `full`.
+**Claude App:** call **`morning_brief({ language: "en", detail: "standard" })` once** — paste result verbatim. Do **not** search Outlook/Teams/Jira separately unless user asked for email/calendar focus or `full`.
 
 ---
 

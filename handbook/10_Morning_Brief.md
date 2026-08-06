@@ -76,7 +76,7 @@ Consistency is more important than creativity.
 
 Summarise:
 
-- Team members on leave
+- Team members on leave (including **pending approval** — show with note *chưa approve* / *pending approval*)
 - Team members working from home
 - Public holidays
 - Out of office
@@ -86,7 +86,7 @@ Highlight potential delivery impacts.
 
 Example:
 
-• Quyen is on annual leave.
+• Alice is on annual leave *(pending approval — Travis not yet approved)*.
 
 • Helen is working from home.
 

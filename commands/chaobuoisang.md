@@ -30,7 +30,7 @@ Vietnamese output by default.
 
 Natural-language triggers ("chào buổi sáng", "báo cáo đầu ngày") use the **same Morning Card** as this command.
 
-**Claude App:** default detail is **standard** unless the user asks for `brief` or `full`.
+**Claude App:** call **`morning_brief({ language: "vi", detail: "standard" })` once** — paste result verbatim. Team + Jira đã có trong card. Lịch/email: bổ sung sau (xem `morning.base.md` Optional enrich) hoặc dùng `full` nếu cần đầy đủ.
 
 ---
 

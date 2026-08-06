@@ -141,6 +141,7 @@ describe("TeamAvailabilityAdapter.getAvailability — approved, active-for-date 
       startDate: "2026-07-18",
       endDate: "2026-07-20",
       availabilityType: "leave",
+      approved: true,
     });
   });
 
@@ -214,14 +215,43 @@ describe("TeamAvailabilityAdapter.getAvailability — snapshot validation", () =
     }
   });
 
-  it("rejects a record whose approval_status is not exactly 'Approve'", async () => {
-    for (const approval_status of ["Pending", "Reject", "approve", ""]) {
-      const snapshotPath = await writeSnapshotFile(snapshot([person({ approval_status })]));
-      const adapter = createTestAdapter({ snapshotPath, maxAgeMinutesRaw: undefined });
-      await expect(adapter.getAvailability({ date: "2026-07-19" })).rejects.toBeInstanceOf(
-        TeamAvailabilitySnapshotInvalidError,
-      );
-    }
+  it("includes pending leave (empty or non-Approve approval_status) with approved: false", async () => {
+    const snapshotPath = await writeSnapshotFile(
+      snapshot([
+        person({
+          name: "Alice Nguyen",
+          start_date: "2026-08-06",
+          end_date: "2026-08-07",
+          availability_type: "Annual Leave",
+          approval_status: "",
+        }),
+        person({
+          name: "Helen Nguyen",
+          start_date: "2026-08-06",
+          end_date: "2026-08-06",
+          approval_status: "Approve",
+        }),
+      ]),
+    );
+    const adapter = createTestAdapter({ snapshotPath, maxAgeMinutesRaw: undefined });
+
+    const aug6 = await adapter.getAvailability({ date: "2026-08-06" });
+    expect(aug6.events).toHaveLength(2);
+    const alice = aug6.events.find((e) => e.name === "Alice Nguyen");
+    expect(alice).toMatchObject({
+      availabilityType: "Annual Leave",
+      approved: false,
+    });
+    expect(aug6.events.find((e) => e.name === "Helen Nguyen")?.approved).toBe(true);
+  });
+
+  it("treats Pending approval_status as not approved", async () => {
+    const snapshotPath = await writeSnapshotFile(
+      snapshot([person({ approval_status: "Pending" })]),
+    );
+    const adapter = createTestAdapter({ snapshotPath, maxAgeMinutesRaw: undefined });
+    const result = await adapter.getAvailability({ date: "2026-07-19" });
+    expect(result.events[0]?.approved).toBe(false);
   });
 
   it("rejects malformed JSON", async () => {

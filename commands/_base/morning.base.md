@@ -16,6 +16,52 @@ You are my AI Chief of Staff. Prepare today's work.
 
 ---
 
+## Claude App fast path (brief / standard) — OVERRIDES Steps 2–4 below
+
+Triggers: `good morning`, `chào buổi sáng`, `morning brief`, `báo cáo đầu ngày`, `/morning`, `/chaobuoisang`.
+
+**Goal: one tool call, reply in under 30 seconds.**
+
+1. Call **`morning_brief` once** — `{ language: "en"|"vi", detail: "standard" }` (or `brief`).
+2. **Paste the returned markdown verbatim** — it is the complete Morning Card (Jira + team included).
+3. **Forbidden before replying** (unless user explicitly asked for email/calendar/Teams or `detail: full`):
+   - Outlook calendar search
+   - Outlook email search
+   - Teams / chat message search
+   - `jira_get_morning_context`
+   - `team_availability_get_availability`
+4. Call **`daily_report_save` after** the user sees the brief (non-blocking).
+
+Skip Step 1 handbook loading, Email Retrieval Strategy, and Standard collection below for this path.
+
+### What standard includes vs skips
+
+| Source | In `morning_brief` (standard)? | Notes |
+|--------|----------------------------------|-------|
+| **Jira** | Yes | Top 3, Next 2, open count, filter link |
+| **Team availability** | Yes | Leave/WFH line from snapshot (`live.team_summary`) |
+| **Calendar** | No (gateway) | M365 Outlook — not in gateway yet |
+| **Email** | No (gateway) | M365 Outlook — not in gateway yet |
+| **Teams chat** | No (gateway) | Native Claude connector only |
+
+Team is **not** skipped — if the Team line looks empty, check leave snapshot (Power Automate) or stale data, not the fast path.
+
+Calendar and email are **intentionally skipped** in standard to stay under ~30s. Use one of the options below when you need them.
+
+### Optional enrich (after showing the card — recommended daily)
+
+When M365 is connected and the user did **not** ask for speed-only (`brief` / `nhanh`):
+
+1. Show **`morning_brief` markdown first** (do not wait).
+2. Then **one parallel batch** (max 2 connector calls):
+   - Calendar: **today only** (next 3 events)
+   - Email: **last 12 hours** (not 36h) — unread + action-required only
+3. **Patch only** the Calendar line (and optionally 1 email bullet under Risks) — do **not** rewrite the card or switch to timeline format.
+
+For complete calendar + email + comms review, use **`detail: full`** (slower, ~1–2 min).
+
+---
+
 ## Step 1 — Load Runtime
 
 Read and follow `runtime/41_Morning_Runtime.md` exactly. Never skip Runtime 41.
@@ -96,12 +142,11 @@ Before completing Communication Review, verify:
 
 ### Fast path (Claude App — brief / standard)
 
-When `morning_brief` returns `payload.live` (brief or standard detail):
+When `morning_brief` returns **pre-rendered markdown** (brief or standard):
 
-1. Use **`live.jira`** and **`live.team_availability`** directly — do **not** call `jira_get_morning_context` or `team_availability_get_availability` again.
-2. **Render the Morning Card in the next message** — no extra tool rounds before the user sees the brief.
-3. **Skip email and calendar deep search** unless the user explicitly asked for email/calendar focus or `$ARGUMENTS` mentions it.
-4. Call **`daily_report_save` after** the user sees the brief (summary only) — never block the reply on save.
+1. **Show it verbatim** — complete Morning Card; Jira + team already inside.
+2. **No other tool calls** before the reply — especially no Outlook email/calendar or Teams search.
+3. **`daily_report_save` after** the user sees the brief.
 
 For `detail: full`, collect live context via separate connector tools as below.
 

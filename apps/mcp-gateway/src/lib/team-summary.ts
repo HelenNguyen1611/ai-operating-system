@@ -1,4 +1,5 @@
 import type { TeamAvailabilityResult } from "../adapters/team-availability/index.js";
+import type { TeamAvailabilityEvent } from "../adapters/team-availability/mapper.js";
 
 export type TeamSummaryStatus = "loaded" | "not_configured" | "error";
 
@@ -11,22 +12,20 @@ export interface TeamSummaryResult {
   warning?: string;
 }
 
-function groupByType(events: TeamAvailabilityResult["events"]): Map<string, string[]> {
-  const map = new Map<string, string[]>();
-  for (const event of events) {
-    const type = event.availabilityType.trim();
-    const names = map.get(type) ?? [];
-    names.push(event.name);
-    map.set(type, names);
+function formatEvent(event: TeamAvailabilityEvent, language: "en" | "vi"): string {
+  const base = `${event.name} — ${event.availabilityType}`;
+  if (event.approved) {
+    return base;
   }
-  return map;
+  return language === "vi" ? `${base} (chưa approve)` : `${base} (pending approval)`;
 }
 
-function formatNames(names: string[], max = 5): string {
-  if (names.length <= max) {
-    return names.join(", ");
+function formatNames(events: TeamAvailabilityEvent[], language: "en" | "vi", max = 5): string {
+  const formatted = events.map((e) => formatEvent(e, language));
+  if (formatted.length <= max) {
+    return formatted.join("; ");
   }
-  return `${names.slice(0, max).join(", ")} +${names.length - max} more`;
+  return `${formatted.slice(0, max).join("; ")} +${formatted.length - max} more`;
 }
 
 function buildLoadedLines(result: TeamAvailabilityResult): TeamSummaryResult {
@@ -45,28 +44,37 @@ function buildLoadedLines(result: TeamAvailabilityResult): TeamSummaryResult {
       : "";
     return {
       status: "loaded",
-      line_en: `No approved leave or WFH for ${date} — full team capacity expected (leave snapshot checked)${staleNote}`,
-      line_vi: `Không có nghỉ phép/WFH đã duyệt ngày ${date} — team đủ người (đã kiểm tra snapshot)${staleNoteVi}`,
+      line_en: `No leave or WFH recorded for ${date} — full team capacity expected (leave snapshot checked)${staleNote}`,
+      line_vi: `Không ghi nhận nghỉ/WFH ngày ${date} — team đủ người (đã kiểm tra snapshot)${staleNoteVi}`,
       warning: stale
         ? `Leave snapshot has ${snapshot_people_total} records but none cover ${date}; latest end_date is ${snapshot_latest_end_date}. Check Power Automate export.`
         : undefined,
     };
   }
 
-  const grouped = groupByType(events);
+  const approved = events.filter((e) => e.approved);
+  const pending = events.filter((e) => !e.approved);
+
   const partsEn: string[] = [];
   const partsVi: string[] = [];
 
-  for (const [type, names] of grouped) {
-    const label = formatNames(names);
-    partsEn.push(`${label} — ${type}`);
-    partsVi.push(`${label} — ${type}`);
+  if (approved.length > 0) {
+    partsEn.push(formatNames(approved, "en"));
+    partsVi.push(formatNames(approved, "vi"));
+  }
+  if (pending.length > 0) {
+    partsEn.push(formatNames(pending, "en"));
+    partsVi.push(formatNames(pending, "vi"));
   }
 
   return {
     status: "loaded",
     line_en: partsEn.join("; "),
     line_vi: partsVi.join("; "),
+    warning:
+      pending.length > 0
+        ? `${pending.length} pending leave record(s) on ${date} — treat as likely absence until approved or rejected.`
+        : undefined,
   };
 }
 

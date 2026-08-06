@@ -180,22 +180,24 @@ export async function loadMorningBriefPayload(
   return payload;
 }
 
-/** Server-rendered Morning Card markdown for brief/standard (deterministic sections pre-filled). */
+/** Server-rendered Morning Card — skips framework file reads (fast path). */
 export async function renderMorningBriefMarkdown(
   input: MorningBriefInput,
-  options: { repoRoot?: string; skipLiveFetch?: boolean } = {},
+  options: { skipLiveFetch?: boolean } = {},
 ): Promise<string> {
-  const payload = await loadMorningBriefPayload(input, options);
-  if (!payload.live) {
+  const [live, timezone] = await Promise.all([
+    options.skipLiveFetch ? Promise.resolve(null) : fetchMorningLiveContext(),
+    getDisplayTimezone(),
+  ]);
+  if (!live) {
     throw new Error("Morning Card render requires live context (brief/standard only)");
   }
-  const timezone = await getDisplayTimezone(options.repoRoot ? { repoRoot: options.repoRoot } : {});
   const jiraConfig = loadJiraConfig();
   return renderMorningCard({
     language: input.language,
     detail: input.detail,
     timezone,
-    live: payload.live,
+    live,
     jiraBaseUrl: jiraConfig?.baseUrl,
   });
 }
@@ -204,11 +206,14 @@ export function registerMorningBrief(server: McpServer): void {
   server.registerTool(
     "morning_brief",
     {
-      title: "Morning Brief",
+      title: "Morning Brief — use ONLY for good morning / chào buổi sáng",
       description:
-        "For detail brief or standard: returns a **pre-rendered Morning Card in markdown** — show it to the user " +
-        "verbatim (headings Snapshot, At a glance, Priorities; never timeline or Needs attention/Resolved). " +
-        "Includes live Jira priorities and team availability. For detail full: returns framework JSON context.",
+        "**Single call for daily morning brief (brief or standard).** Returns a complete pre-rendered " +
+        "Morning Card markdown (Jira + team already included). **Show the tool result verbatim** in your " +
+        "next message — do NOT reformat. **Do NOT call** jira_get_morning_context, " +
+        "team_availability_get_availability, Outlook calendar, Outlook email, or Teams chat search before " +
+        "or after this tool unless the user explicitly asked for email/calendar/Teams focus or detail=full. " +
+        "Typical args: { language: \"en\"|\"vi\", detail: \"standard\" }. For detail full: returns framework JSON.",
       inputSchema: MorningBriefInputShape,
     },
     async (args) => {

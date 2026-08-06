@@ -163,7 +163,7 @@ function formatPriorityLine(item: RankedIssue, index: number): string {
 
 function buildRisks(
   live: MorningLiveContext,
-  labels: (typeof LABELS)["en"],
+  labels: (typeof LABELS)["en"] | (typeof LABELS)["vi"],
   rankedCount: number,
 ): string[] {
   const risks: string[] = [];

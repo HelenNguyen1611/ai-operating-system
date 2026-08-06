@@ -15,9 +15,9 @@ export function registerJiraMorningContext(server: McpServer): void {
     {
       title: "Jira Morning Context",
       description:
-        "Returns the authenticated Jira user's open issues, bucketed into assigned_open, " +
-        "recently_updated, due_today, and overdue. Timestamps are normalised to " +
-        "Asia/Ho_Chi_Minh before classification (matches config/runtime.yaml). Read-only.",
+        "Low-level Jira bucket API. **Do not call for standard morning brief** — use morning_brief instead " +
+        "(it already includes this data). Use only for ad-hoc Jira queries outside the morning workflow. " +
+        "Returns assigned_open, recently_updated, due_today, overdue. Read-only.",
       inputSchema: GetMorningContextInputShape,
     },
     async (args) => {
