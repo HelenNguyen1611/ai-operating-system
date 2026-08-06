@@ -96,7 +96,7 @@ describe("health_check invocation", () => {
 });
 
 describe("morning_brief — English brief payload (end-to-end via MCP)", () => {
-  it("returns framework context with the English template", async () => {
+  it("returns pre-rendered Morning Card markdown for brief/standard", async () => {
     const client = await connectMcpClient();
     try {
       const result = await client.callTool({
@@ -106,18 +106,14 @@ describe("morning_brief — English brief payload (end-to-end via MCP)", () => {
       expect(result.isError).toBeFalsy();
 
       const content = result.content as Array<{ type: string; text: string }>;
-      const payload = JSON.parse(content[0].text);
+      const markdown = content[0].text;
 
-      expect(payload.tool).toBe("morning_brief");
-      expect(payload.language).toBe("en");
-      expect(payload.detail).toBe("brief");
-      expect(payload.context.template).toContain("Morning Brief");
-      expect(payload.context.base_workflow.length).toBeGreaterThan(0);
-      expect(payload.context.runtime.morning_runtime.length).toBeGreaterThan(0);
-      expect(payload.context.runtime.context_engine.length).toBeGreaterThan(0);
-      expect(payload.context.runtime.reasoning_engine.length).toBeGreaterThan(0);
-      expect(payload.context.config.length).toBeGreaterThan(0);
-      expect(payload.instructions).toContain("commands/_base/morning.base.md");
+      expect(markdown).toContain("# Morning Brief");
+      expect(markdown).toContain("### Snapshot");
+      expect(markdown).toContain("### At a glance");
+      expect(markdown).toContain("**Team:**");
+      expect(markdown).toContain("MORNING_CARD");
+      expect(markdown).not.toContain("Needs attention");
     } finally {
       await client.close();
     }
@@ -140,6 +136,8 @@ describe("morning_brief — Vietnamese brief payload (end-to-end via MCP)", () =
       expect(payload.language).toBe("vi");
       expect(payload.detail).toBe("full");
       expect(payload.context.template).toContain("Báo cáo đầu ngày");
+      expect(payload.context.runtime.mode).toBe("full");
+      expect(payload.live).toBeUndefined();
     } finally {
       await client.close();
     }
@@ -180,7 +178,7 @@ describe("morning_brief — missing required file handling", () => {
     await expect(
       loadMorningBriefPayload(
         { language: "en", detail: "brief" },
-        { repoRoot: MISSING_FILE_FIXTURE_ROOT },
+        { repoRoot: MISSING_FILE_FIXTURE_ROOT, skipLiveFetch: true },
       ),
     ).rejects.toThrow(FrameworkFileMissingError);
   });
@@ -189,13 +187,13 @@ describe("morning_brief — missing required file handling", () => {
     try {
       await loadMorningBriefPayload(
         { language: "en", detail: "brief" },
-        { repoRoot: MISSING_FILE_FIXTURE_ROOT },
+        { repoRoot: MISSING_FILE_FIXTURE_ROOT, skipLiveFetch: true },
       );
       throw new Error("expected loadMorningBriefPayload to reject");
     } catch (error) {
       expect(error).toBeInstanceOf(FrameworkFileMissingError);
       expect((error as FrameworkFileMissingError).relativePath).toBe(
-        "runtime/48_Reasoning_Engine.md",
+        "runtime/_morning-fast-path.md",
       );
     }
   });

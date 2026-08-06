@@ -1,5 +1,7 @@
 # Morning Brief Output Template
 
+> **Deprecated for Claude App and slash commands.** Use `templates/i18n/morning.en.md` + `templates/i18n/_morning-layout.md` (Morning Card) instead. This file remains for legacy Claude Code references only.
+
 Use this template after executing `commands/morning.md` and Runtime 41.
 
 Select **one** format below based on parsed detail level: `brief`, `standard`, or `full`.

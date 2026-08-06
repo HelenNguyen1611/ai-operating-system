@@ -2,6 +2,8 @@
 
 Apply to Morning commands and any command that references this file.
 
+Morning output uses the unified **Morning Card** in `templates/i18n/_morning-layout.md` — same structure on Claude App desktop and mobile; only language labels change.
+
 ---
 
 ## en

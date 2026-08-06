@@ -3,53 +3,11 @@ import {
   SaveDailyReportInputSchema,
   SaveDailyReportInputShape,
 } from "../schemas/daily-report/save.input.js";
-import { loadJiraConfig } from "../adapters/jira/config.js";
-import { createJiraAdapter, type JiraMorningContext } from "../adapters/jira/index.js";
-import { loadTeamAvailabilityConfig } from "../adapters/team-availability/config.js";
-import { createTeamAvailabilityAdapter, type TeamAvailabilityResult } from "../adapters/team-availability/index.js";
 import { loadDailyReportConfig } from "../adapters/daily-report/config.js";
 import { createDailyReportAdapter } from "../adapters/daily-report/index.js";
 import { buildErrorResult } from "../types/error-envelope.js";
 import { mapDailyReportAdapterError } from "./daily-report-error-mapping.js";
-
-/**
- * Best-effort fetch of Jira's current morning context. Never throws — an
- * unconfigured or failing Jira must not block saving the rest of the daily
- * report (see plan: "one broken/unconfigured connector never blocks the
- * save").
- */
-async function fetchJira(): Promise<{ jira: JiraMorningContext | null; jiraError?: string }> {
-  const config = loadJiraConfig();
-  if (!config) {
-    return { jira: null, jiraError: "Jira is not configured (ADAPTER_NOT_CONFIGURED)." };
-  }
-  try {
-    const jira = await createJiraAdapter(config).getMorningContext();
-    return { jira };
-  } catch (error) {
-    return { jira: null, jiraError: error instanceof Error ? error.message : String(error) };
-  }
-}
-
-/** Same best-effort contract as fetchJira() above, for Team Availability. */
-async function fetchTeamAvailability(): Promise<{
-  teamAvailability: TeamAvailabilityResult | null;
-  teamAvailabilityError?: string;
-}> {
-  const config = loadTeamAvailabilityConfig();
-  if (!config) {
-    return {
-      teamAvailability: null,
-      teamAvailabilityError: "Team Availability is not configured (ADAPTER_NOT_CONFIGURED).",
-    };
-  }
-  try {
-    const teamAvailability = await createTeamAvailabilityAdapter(config).getAvailability();
-    return { teamAvailability };
-  } catch (error) {
-    return { teamAvailability: null, teamAvailabilityError: error instanceof Error ? error.message : String(error) };
-  }
-}
+import { fetchMorningLiveContext } from "../lib/live-context-fetch.js";
 
 export function registerDailyReportSave(server: McpServer): void {
   server.registerTool(
@@ -74,19 +32,16 @@ export function registerDailyReportSave(server: McpServer): void {
         );
       }
 
-      const [{ jira, jiraError }, { teamAvailability, teamAvailabilityError }] = await Promise.all([
-        fetchJira(),
-        fetchTeamAvailability(),
-      ]);
+      const live = await fetchMorningLiveContext();
 
       try {
         const adapter = createDailyReportAdapter(loadDailyReportConfig());
         const report = await adapter.save({
           summary: parsed.data.summary,
-          jira,
-          jiraError,
-          teamAvailability,
-          teamAvailabilityError,
+          jira: live.jira,
+          jiraError: live.jira_error,
+          teamAvailability: live.team_availability,
+          teamAvailabilityError: live.team_availability_error,
         });
         return { content: [{ type: "text", text: JSON.stringify(report) }] };
       } catch (error) {

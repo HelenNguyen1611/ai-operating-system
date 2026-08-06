@@ -20,6 +20,10 @@ export interface TeamAvailabilityResult {
   /** Passed through from the snapshot itself — when the underlying data was generated, not when this tool call ran. */
   generated_at: string;
   timezone: string;
+  /** Total approved records in snapshot (unfiltered by date). */
+  snapshot_people_total: number;
+  /** Latest end_date across all snapshot records (YYYY-MM-DD). */
+  snapshot_latest_end_date: string;
 }
 
 export interface TeamAvailabilityAdapterOptions extends TeamAvailabilitySnapshotReaderOptions {
@@ -100,6 +104,10 @@ export class TeamAvailabilityAdapter {
     }
 
     const events = snapshot.people.map(mapPerson).filter((event) => isActiveOnDate(event, date));
+    const snapshot_latest_end_date = snapshot.people.reduce(
+      (latest, person) => (person.end_date > latest ? person.end_date : latest),
+      "",
+    );
 
     return {
       date,
@@ -107,6 +115,8 @@ export class TeamAvailabilityAdapter {
       events,
       generated_at: snapshot.generated_at,
       timezone,
+      snapshot_people_total: snapshot.people.length,
+      snapshot_latest_end_date,
     };
   }
 }

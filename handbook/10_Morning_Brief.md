@@ -189,15 +189,26 @@ Apply the Eisenhower Matrix from `runtime/48_Reasoning_Engine.md` during Runtime
 
 ## Output Rules
 
+All modes use the unified **Morning Card** layout (`templates/i18n/_morning-layout.md`) — same structure on Claude App desktop and mobile. User must grasp First action within **10 seconds** and full picture within **1 minute**.
+
+**Scan order:** Snapshot → At a glance (Team, Calendar, Jira) → Priorities (Top 3 + Next 2) → Risks → Stand-up.
+
 ### Brief and Standard Mode
 
-Present **Top 3 only** — the primary priority output.
+Present the **Morning Card** — not a free-form summary. **Top 3** as primary focus, plus **Next 2** and Jira link in At a glance.
 
-For each item:
+For each Top 3 and Next 2 item:
 
 - prefix with Eisenhower tag: `[Q1]`, `[Q2]`, `[Q3]`, or `[Q4]` when useful (Q4 in Top 3 is rare)
 - include a short **why** grounded in evidence (due date, blocker, commitment, bucket, calendar — not keyword guessing)
+- for Jira issues in Next 2, include **key** and link to the issue `url`
 - do **not** show the full matrix by default
+
+**Open on Jira:** after `jira_get_morning_context`, show `assigned_open` count and a filter link:
+
+- URL: `{JIRA_BASE_URL}/issues/?jql=` + encoded JQL
+- JQL: `assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC`
+- aligns with gateway `assigned_open` filtering (statusCategory, not `resolution`)
 
 Valid Top 3 distributions include **zero Q1**, **one Q1**, or **multiple Q1** — follow evidence, not a fixed recipe.
 
@@ -224,11 +235,22 @@ Recommendations should consider:
 - client commitments
 - available team members and focus time
 
-## Examples (Brief / Standard Top 3)
+## Examples (Brief / Standard Top 3 + Next 2)
+
+**Top 3**
 
 1. `[Q1]` TRIN-82 — Review before 15:00 release window; blocking deploy (due today, client path).
 2. `[Q1]` Reply to Travis — EOD response committed in email thread (same-day commitment).
 3. `[Q2]` UP-179 — Ownership UI; important but no due today; schedule deep work 10:00–12:00.
+
+**Next 2**
+
+4. `[Q2]` [UP-247](https://wootech.atlassian.net/browse/UP-247) — Home page styling after backend integration.
+5. `[Q3]` [CW-121](https://wootech.atlassian.net/browse/CW-121) — PM clarification pending; batch follow-up.
+
+**Open on Jira**
+
+- 38 open issues assigned to you — [View all open tasks](https://wootech.atlassian.net/issues/?jql=assignee%20%3D%20currentUser()%20AND%20statusCategory%20!%3D%20Done%20ORDER%20BY%20updated%20DESC)
 
 ## Example (Full Mode — Mini Matrix)
 
@@ -335,7 +357,9 @@ Before presenting the Morning Brief, verify:
 
 ✓ Recommendations are actionable.
 
-✓ Top 3 items have Eisenhower tags and evidence-backed why where applicable.
+✓ Top 3 and Next 2 items have Eisenhower tags and evidence-backed why where applicable.
+
+✓ Open on Jira link and count shown when Jira context was loaded.
 
 ✓ No fake urgency invented to fill Q1.
 
@@ -373,6 +397,8 @@ Include only:
 - Team Availability
 - Calendar Highlights
 - Top 3 Priorities (each with `[Q1]`–`[Q4]` tag and short why)
+- Next 2 (also on radar)
+- Open on Jira (count + filter link, when Jira loaded)
 - Critical Risks
 - First Recommended Action (aligned with best Q1 or Q2)
 

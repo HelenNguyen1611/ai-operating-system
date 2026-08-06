@@ -418,6 +418,25 @@ Select **Top 3** flexibly — valid outcomes include zero, one, or multiple Q1 i
 
 Each Top 3 item must include a short **why** grounded in evidence.
 
+## 6.4a — Select Next 2
+
+After Top 3, select the **next two** ranked candidates (4 and 5) from the same Eisenhower ordering.
+
+- One line each with quadrant tag and brief why.
+- Prefer Jira issues — include key and link to issue `url`.
+- If fewer than five candidates exist, show what is available or state that no further items qualify.
+
+## 6.4b — Open on Jira Link
+
+When `jira_get_morning_context` is available:
+
+- Report `assigned_open.length` as the open-issue count.
+- Provide a filter URL: `{baseUrl}/issues/?jql=` + URL-encoded  
+  `assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC`
+- Derive `{baseUrl}` from `JIRA_BASE_URL` or any issue `url` in the response.
+
+Note: the count may be capped by the adapter pagination limit (100 items); say so if the result set may be truncated.
+
 ## 6.5 — First Action and Q2 Focus
 
 Choose **First Action** per Runtime 48 (prefer highest-evidence Q1; if none, best Q2).
@@ -472,6 +491,8 @@ Include:
 
 - first action (from Step 6.5 — highest-evidence Q1, or best Q2 if no true Q1)
 - top 3 priorities (with Eisenhower tags and evidence-backed why)
+- next 2 (also on radar)
+- open on Jira (count + filter link)
 - deep work block for primary Q2 item when calendar allows
 - Q3 batch or coordination windows (suggest only — no auto-assign)
 - meeting preparation
@@ -732,6 +753,10 @@ Communication risks.
 ### 6. Recommended Priorities
 
 Top 3 priorities with Eisenhower quadrant tags (`[Q1]`–`[Q4]`) and evidence-backed why.
+
+Next 2 (also on radar) — ranks 4–5 with tags, keys, and links when Jira.
+
+Open on Jira — count from `assigned_open` plus filter link (see Step 6.4b).
 
 In full mode, optionally include a mini Eisenhower Matrix (see `handbook/10_Morning_Brief.md`).
 

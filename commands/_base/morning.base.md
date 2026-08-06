@@ -94,24 +94,51 @@ Before completing Communication Review, verify:
 
 ## Step 3 — Collect Live Context
 
+### Fast path (Claude App — brief / standard)
+
+When `morning_brief` returns `payload.live` (brief or standard detail):
+
+1. Use **`live.jira`** and **`live.team_availability`** directly — do **not** call `jira_get_morning_context` or `team_availability_get_availability` again.
+2. **Render the Morning Card in the next message** — no extra tool rounds before the user sees the brief.
+3. **Skip email and calendar deep search** unless the user explicitly asked for email/calendar focus or `$ARGUMENTS` mentions it.
+4. Call **`daily_report_save` after** the user sees the brief (summary only) — never block the reply on save.
+
+For `detail: full`, collect live context via separate connector tools as below.
+
+### Standard collection (full mode or non-gateway clients)
+
 Gather from **available** sources only:
 
 - Microsoft 365 — Calendar, Outlook, Teams (when connected)
 - Jira — assigned Issues, blockers, updates (when connected)
+- **Team availability** — see below (mandatory attempt before output)
 - Figma — only when design context is relevant to today's priorities or focus context
-- Leave tracker / team availability (when available)
 - Current conversation
 - User **focus context** from `$ARGUMENTS` (after stripping language/detail tokens)
 
-Do not fabricate missing data.
+### Team Availability (mandatory)
 
-If a source is unavailable, note it **once** in the Context section of the template (standard/full) or fold into Risks / Unknowns (brief).
+Before producing the brief, **always attempt** to load team availability for today:
+
+1. **Claude App / MCP gateway:** call `team_availability_get_availability` (default date: today in `config/runtime.yaml` timezone).
+2. **Local / other clients:** use leave tracker, Outlook Calendar, Teams presence, or Runtime 41 Step 2 sources — best evidence available.
+
+Rules:
+
+- Do **not** skip this step because Jira or email is already loaded.
+- If the tool returns data, summarise **significant** changes only (on leave, WFH, unavailable stakeholders affecting delivery).
+- If the tool is not configured, fails, or returns empty — still render the template **Team** section with one honest line (e.g. `Not verified — team availability source unavailable`).
+- Never invent names or leave status.
+
+Do not fabricate missing data from other sources.
+
+If a non-team source is unavailable, note it **once** in the Context section (standard/full) or fold into Risks / Unknowns (brief) — **except** team availability, which always uses the **Team** section.
 
 Do not over-explain connector limitations.
 
 Do not repeatedly recommend "connect Jira".
 
-Separate **Verified** / **Inferred** / **Unknown** when useful — especially in full mode.
+Separate **Verified** / **Inferred** / **Unknown** when useful — especially in full mode and in the Team section when evidence is partial.
 
 ---
 
@@ -123,7 +150,7 @@ Run the Runtime 41 workflow internally:
 2. Review calendar
 3. Review Jira
 4. Review communication
-5. Identify priorities — apply Eisenhower Matrix from `runtime/48_Reasoning_Engine.md` (Daily Prioritisation); classify candidates per Runtime 41 Step 6; then select Top 3 and First Action (respect user focus context)
+5. Identify priorities — apply Eisenhower Matrix from `runtime/48_Reasoning_Engine.md` (Daily Prioritisation); classify candidates per Runtime 41 Step 6; select Top 3, **Next 2**, First Action, and the **Jira open-tasks link** (respect user focus context)
 6. Identify blockers and risks
 7. Prepare stand-up
 8. Suggest execution plan
@@ -134,22 +161,42 @@ Check every Decision Gate in Runtime 41 before producing output.
 
 ## Step 5 — Produce Output
 
-Format using the **template** specified by the invoking command.
+Format using the **Morning Card** layout in `templates/i18n/_morning-layout.md` and the **template** specified by the invoking command (`morning.en.md` or `morning.vi.md`).
+
+Same card structure for:
+
+- `/morning` and `/chaobuoisang`
+- natural language: "good morning", "chào buổi sáng", "prepare my morning brief", "báo cáo đầu ngày"
+- Claude App desktop and mobile (markdown only — no HTML, no wide tables in brief/standard)
 
 Apply the selected **language** and **detail** mode.
 
+### Unified scan order (all clients)
+
+1. Title + date + timezone
+2. **Snapshot** — First action, Mission, Confidence + source ticks (10-second read)
+3. **At a glance** — Team, Calendar, Jira count + link
+4. **Priorities** — Top 3 + Next 2 with Eisenhower tags and links
+5. **Risks**
+6. **Stand-up**
+
+User must understand what to do first within **1 minute** without scrolling past Snapshot on mobile.
+
 ### brief
 
-- Maximum **8 bullets total** across the entire output (headings do not count).
+- Use Morning Card structure — **do not skip Snapshot or At a glance**.
+- Maximum **3 bullets** in Risks (Priorities and At a glance are excluded from this cap).
 - No long explanations. Only what matters today.
-- Use the invoking command's template; **omit the Context section** — fold missing sources into Risks / Unknowns.
+- **Omit expanded Context Budget** — fold other missing sources into Risks.
+- **Always include** Team (in At a glance), Top 3, Next 2, Jira link when Jira loaded — see template.
 - Stand-up section follows language rules (English by default for team stand-up even in Vietnamese reports).
 
 ### standard
 
-- Use the invoking command's template **as written**.
-- Each content section maximum **3 bullets** (Stand-up lines are not bullets).
-- Keep output short and scannable.
+- Default for **Claude App** when detail is not specified.
+- Use Morning Card template **as written** — Snapshot and At a glance mandatory.
+- Risks max **3** bullets; Calendar max **3** items in At a glance line or expanded in full only.
+- Keep lines short; one line per priority.
 
 ### full
 
@@ -166,7 +213,9 @@ Apply the selected **language** and **detail** mode.
 
 ### Structure rules (all modes)
 
-- Put the most important item first.
+- Follow `_morning-layout.md` section order — never reorder for "creativity".
+- **Always render At a glance Team and Jira lines** — even when data is missing (state honestly).
+- Put the most important item in **First action** (Snapshot), not buried in priorities.
 - Recommend; I decide.
 - No unsupported assumptions, no duplicated information.
 
