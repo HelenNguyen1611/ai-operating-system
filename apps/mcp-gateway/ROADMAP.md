@@ -1,10 +1,18 @@
 # MCP Gateway — Roadmap
 
-Status: Planning document. No phase below Phase 0 is implemented by this document.
+Status: Living roadmap. Phase 0–2 extensions are implemented; Phase 3 is next. Historical test counts inside completed phase entries describe those milestones, while the Current Snapshot below describes the repository today.
 
 Companion to `ARCHITECTURE.md` (the stable design each phase must follow) and `runtime/50_Remote_Gateway.md` (the runtime-layer spec of record for phase status). If this roadmap and `runtime/50_Remote_Gateway.md` ever disagree on what's "current," the runtime doc wins — update this file to match, not the other way around.
 
 Each phase is gated on review of the previous one. No phase starts implementation before its entry here is written and agreed.
+
+## Current Snapshot
+
+- **8 MCP tools:** `health_check`, `morning_brief`, three `jira_*` tools, `team_availability_get_availability`, `daily_report_save`, and `daily_report_get`.
+- **3 adapter boundaries:** Jira Cloud (read-only HTTP), Team Availability (read-only local JSON snapshot), and Daily Report (local per-day JSON persistence).
+- **118 Vitest cases across 11 test files** at the current collection count. Earlier 4/10/31 counts below are retained as historical phase verification records.
+- `morning_brief.detail` currently accepts `"brief"`, `"standard"`, and `"full"`.
+- Phase 3 authentication, rate limiting, session strategy, and production deployment remain unimplemented.
 
 ---
 
@@ -18,7 +26,7 @@ Each phase is gated on review of the previous one. No phase starts implementatio
 
 ---
 
-## Phase 0.5 — Architecture Standardisation (this phase)
+## Phase 0.5 — Architecture Standardisation (done)
 
 **Goal:** write down the conventions in `ARCHITECTURE.md` *before* a second tool or first adapter exists, so growth doesn't retrofit structure onto ad hoc code.
 
@@ -34,7 +42,7 @@ Each phase is gated on review of the previous one. No phase starts implementatio
 
 **Goal:** serve the framework's own files through the gateway, per `runtime/50_Remote_Gateway.md`'s original Phase 1 definition — `morning_brief(language, detail, focus)` returning the base workflow + Runtime 41 + the matching i18n template as instruction payload.
 
-**Shipped:** `morning_brief(language, detail)` — see `runtime/50_Remote_Gateway.md` → "Phase 1 Scope" for the full file list, payload shape, and the two deliberate deviations from the original sketch (`focus` dropped; `detail` restricted to `"brief" | "full"`).
+**Shipped at this milestone:** `morning_brief(language, detail)` — see `runtime/50_Remote_Gateway.md` → "Phase 1 Scope" for the full file list, payload shape, and the two deliberate deviations from the original sketch (`focus` dropped; `detail` was initially restricted to `"brief" | "full"`). The current schema has since added `"standard"`, as recorded in Current Snapshot.
 
 **Architecture obligations from this phase, as actually resolved:**
 - Naming: shipped as the bare tool name `morning_brief` (per the approved spec), not `framework.morning_brief` as originally speculated. Documented in `ARCHITECTURE.md` §1 as a second unnamespaced platform-level tool, alongside `health_check`.
@@ -49,7 +57,7 @@ Each phase is gated on review of the previous one. No phase starts implementatio
 
 ---
 
-## Phase 2 — Adapters: Jira done, Outlook not started
+## Phase 2 — Adapters and local context extensions (implemented; Outlook not started)
 
 **Goal:** the architectural point of the whole gateway — Jira first, then Outlook, live behind the gateway instead of behind client-specific connectors.
 
@@ -57,7 +65,7 @@ Each phase is gated on review of the previous one. No phase starts implementatio
 Claude App → AI OS Gateway → Jira Adapter → Jira
 ```
 
-**Shipped (Jira only):** three new read-only tools — `jira_search_issues`, `jira_get_issue`, `jira_get_morning_context` — backed by `src/adapters/jira/`. Full detail in `runtime/50_Remote_Gateway.md` → "Phase 2 Scope."
+**Shipped:** three Jira read-only tools — `jira_search_issues`, `jira_get_issue`, `jira_get_morning_context` — followed by `team_availability_get_availability` and the local `daily_report_save`/`daily_report_get` pair. Outlook has not started. Full Jira detail remains in `runtime/50_Remote_Gateway.md` → "Phase 2 Scope."
 
 **Architecture obligations, as actually resolved:**
 - `src/adapters/jira/` created per the Section 8 five-file shape — confirmed workable, will be copied for Outlook.
@@ -70,7 +78,7 @@ Claude App → AI OS Gateway → Jira Adapter → Jira
 
 **Verified:** `npm run typecheck` clean; `npm test` 31/31 passing (10 original Phase 1 tests unchanged — zero regression — plus 16 Jira adapter unit tests with a mocked/injected `fetch`, plus 5 Jira MCP-tool integration tests); source scan confirms no `postJson`/`putJson`/`deleteJson`/transition/comment code exists anywhere in the Jira adapter or tools; no `.env` file committed, only `.env.example` with placeholders.
 
-**Sequencing within Phase 2:** Jira shipped first, matching the original approval. **Outlook has not been started** — this phase is not closed, only its Jira increment is done. Each adapter remains its own reviewable increment, not a combined PR.
+**Sequencing within Phase 2:** Jira shipped first, matching the original approval. Team Availability and Daily Report were added later as separate context extensions. **Outlook has not been started**; it remains a future, independently reviewable increment.
 
 **Non-goals still held:** authentication scheme for the gateway itself (the Jira adapter has its own credentials to Jira; that is separate from who is allowed to call the gateway — still Phase 3). No write/transition/comment capability — verified structurally, not just by convention.
 
@@ -79,6 +87,8 @@ Claude App → AI OS Gateway → Jira Adapter → Jira
 **Phase 2.2 (post-launch fix):** a live acceptance test showed `jira_get_morning_context`'s `assigned_open` incorrectly including many Done issues. Root cause: the original JQL (`assignee = currentUser() AND resolution = Unresolved ORDER BY updated DESC`) relied on Jira's `resolution` field to mean "not done" — unreliable in this workspace, where the Done transition doesn't set `resolution` (confirmed live: `GO-37`/`IN-152`/`IN-232`/`TRIN-34` all matched `resolution = Unresolved` while `status = "Done"`). Fixed by dropping the `resolution` clause entirely (JQL was `assignee = currentUser() ORDER BY updated DESC`, further bounded in Phase 2.3 below) and filtering client-side on `status.statusCategory.key === "done"` instead — Jira's own designed-for-this field, not the workspace-dependent `resolution` field or the potentially-mislabeled `status.name`. `recently_updated` is now derived from the *unfiltered* result set rather than from `assigned_open`, so a Done issue updated moments ago can still appear there even though it's excluded from `assigned_open`; `due_today`/`overdue` remain scoped to `assigned_open` only, unchanged. No MCP tool contract changed — `statusCategory` is used for internal filtering only, never added to the public `JiraIssueSummary` output. Full detail: `runtime/50_Remote_Gateway.md` → "Phase 2.2" and the Operations Handbook §18. Lesson for Outlook: a workspace-specific field like `resolution` should never be trusted as a universal "is this done" signal without live verification — prefer the platform-normalised field (`statusCategory`) even when a workspace-specific field looks like it should work.
 
 **Phase 2.3 (optimisation, approved):** `getMorningContext()`'s JQL is now `assignee = currentUser() AND updated >= -{lookbackDays}d ORDER BY updated DESC` — a configurable recency bound added alongside Phase 2.2's fix, **not** a reintroduction of `resolution`. `{lookbackDays}` comes from a new `MORNING_CONTEXT_LOOKBACK_DAYS` env var, resolved by the same `loadJiraConfig()` function that already resolves Jira credentials (`JiraConfig` gained one field, `lookbackDays`), following the existing config pattern rather than introducing a new one. Validation: positive integer only, capped at 365; anything else (missing, non-numeric, decimal, zero, negative, >365) falls back to 30 — this field, unlike credentials, always resolves to a usable value, so an invalid setting never prevents the gateway from starting or a call from succeeding. `assigned_open`/`recently_updated`/`due_today`/`overdue` semantics are byte-for-byte unchanged from Phase 2.2; only the upstream query's time window changed. No MCP tool contract changed. Full detail: `runtime/50_Remote_Gateway.md` → "Phase 2.3" and the Operations Handbook §18.
+
+**Post-2.3 context extensions (shipped):** `team_availability_get_availability` reads a privacy-filtered local JSON snapshot produced outside the gateway. `daily_report_save` stores today's best-effort Jira/Team Availability snapshot plus an optional summary, and `daily_report_get` retrieves a saved date. These additions bring the public registry to eight tools. Daily Report is the only write path and is restricted to its local configured store; external Jira and Team Availability sources remain read-only.
 
 ---
 

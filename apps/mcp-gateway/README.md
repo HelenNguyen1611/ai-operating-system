@@ -1,8 +1,8 @@
 # MCP Gateway
 
-A self-contained Remote MCP (Model Context Protocol) server that exposes parts of the Personal AI Operating System framework — and, as of Phase 2, read-only Jira access — to external AI clients such as Claude Desktop, over Streamable HTTP.
+A self-contained Remote MCP (Model Context Protocol) server that exposes parts of the Personal AI Operating System framework, read-only Jira and Team Availability context, and local Daily Report persistence to external AI clients such as Claude Desktop, over Streamable HTTP.
 
-Status: **Experimental.** Phase 2 complete (Jira read-only). See `../../runtime/50_Remote_Gateway.md` for the authoritative phase-status spec, `ARCHITECTURE.md` for stable design conventions, and `ROADMAP.md` for what's next.
+Status: **Experimental.** Phase 2 extensions are shipped; Phase 3 authentication and deployment hardening have not started. See `../../runtime/50_Remote_Gateway.md` for the authoritative phase history, `ARCHITECTURE.md` for stable design conventions, and `ROADMAP.md` for the current snapshot and what's next.
 
 For the full operational runbook (setup, running, Cloudflare Tunnel, Claude Desktop connector, troubleshooting, security) see **`../../runtime/51_MCP_Gateway_Operations_Handbook.md`** — this README is a quick-start pointer, not a replacement for it.
 
@@ -13,7 +13,7 @@ For the full operational runbook (setup, running, Cloudflare Tunnel, Claude Desk
 ```bash
 cd apps/mcp-gateway
 npm install
-npm run typecheck && npm test   # should print 31/31 passing
+npm run typecheck && npm test   # currently 118 tests
 npm run dev                       # listens on :3000
 ```
 
@@ -24,15 +24,18 @@ curl -s http://localhost:3000/health
 
 ## Tools exposed
 
-| Tool | Phase | Input | Requires Jira env vars? |
+| Tool | Capability | Input | Configuration |
 |---|---|---|---|
-| `health_check` | 0 | none | No |
-| `morning_brief` | 1 | `{ language: "en"\|"vi", detail: "brief"\|"full" }` | No |
-| `jira_search_issues` | 2 | `{ jql: string, maxResults?: number }` | Yes |
-| `jira_get_issue` | 2 | `{ key: string }` | Yes |
-| `jira_get_morning_context` | 2 | `{}` | Yes |
+| `health_check` | Gateway health | none | None |
+| `morning_brief` | Morning Card/context | `{ language: "en"\|"vi", detail: "brief"\|"standard"\|"full" }` | Jira and Team Availability are best-effort in fast modes |
+| `jira_search_issues` | Jira read-only search | `{ jql: string, maxResults?: number }` | `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` |
+| `jira_get_issue` | Jira read-only issue lookup | `{ key: string }` | Jira variables |
+| `jira_get_morning_context` | Jira morning context | `{}` | Jira variables |
+| `team_availability_get_availability` | Team leave/WFH snapshot | `{ date?: "YYYY-MM-DD", team_scope?: "all" }` | `TEAM_AVAILABILITY_SNAPSHOT_PATH` |
+| `daily_report_save` | Save today's local report | `{ summary?: string }` | Optional `DAILY_REPORT_STORE_DIR` |
+| `daily_report_get` | Read a local report | `{ date?: "YYYY-MM-DD" }` | Optional `DAILY_REPORT_STORE_DIR` |
 
-All five are read-only — see `ARCHITECTURE.md` and the Security section of the Operations Handbook for how that's enforced structurally, not just by convention.
+The three Jira tools and Team Availability tool are read-only. `daily_report_save` writes only to the configured local report store; it does not modify Jira or the Team Availability source. See `ARCHITECTURE.md` and the Security section of the Operations Handbook for the integration boundaries.
 
 ## Jira configuration
 
@@ -50,7 +53,7 @@ There is **no automatic `.env` loading** — this is deliberate (see `ARCHITECTU
 npx tsx --env-file=.env src/index.ts
 ```
 
-Without Jira configured, `health_check` and `morning_brief` work exactly as before, and the three `jira_*` tools still appear in `tools/list` but return a clear `ADAPTER_NOT_CONFIGURED` error when called — the gateway never crashes or silently degrades. Full detail: `runtime/51_MCP_Gateway_Operations_Handbook.md` §18.
+Without Jira configured, all tools still appear in `tools/list`; direct `jira_*` calls return a clear `ADAPTER_NOT_CONFIGURED` error. Morning Brief and Daily Report treat unavailable integrations as best-effort context instead of preventing the gateway from starting. Full detail: `runtime/51_MCP_Gateway_Operations_Handbook.md` §18.
 
 ## Documentation map
 
@@ -70,11 +73,11 @@ src/
   index.ts       Entry point (reads PORT, starts the HTTP listener)
   server.ts       Express + MCP transport wiring only — no tool logic
   tools/           One file per MCP tool, plus the tool registry (index.ts)
-  adapters/jira/    Read-only Jira Cloud REST API v3 client (Phase 2)
+  adapters/          Jira, Team Availability, and Daily Report boundaries
   schemas/          Zod input validation, one folder per domain
   types/             Shared cross-cutting types (currently: the error envelope)
   lib/                Infrastructure helpers (safe repo-relative paths)
-tests/             Vitest — 31 tests, see the Operations Handbook §11
+tests/             Vitest — currently 118 tests across 11 test files
 ```
 
 See the Operations Handbook §3 for the fully annotated version of this tree.

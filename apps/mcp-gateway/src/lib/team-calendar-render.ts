@@ -138,8 +138,8 @@ export function renderTeamCalendarHtml(
 
   const headerCells = calendar.days
     .map((day) => {
-      let bg = C.headerBg;
-      let color = C.headerText;
+      let bg: string = C.headerBg;
+      let color: string = C.headerText;
       let borderBottom = `1px solid ${C.cardBorder}`;
       if (day.isToday) {
         bg = C.todayCol;
@@ -160,7 +160,7 @@ export function renderTeamCalendarHtml(
           const day = calendar.days[i];
           const isToday = day?.isToday ?? false;
           const isWeekend = day?.isWeekend ?? false;
-          let cellBg = rowBg;
+          let cellBg: string = rowBg;
           if (isToday) cellBg = C.todayCol;
           else if (isWeekend) cellBg = C.weekendCell;
           if (!cell) {
@@ -192,10 +192,94 @@ export function renderTeamCalendarHtml(
   ].join("");
 }
 
+const DAYS_PER_WEEK = 7;
+
+function compactCalendarRow(
+  calendar: TeamMonthCalendar,
+  row: TeamMonthCalendar["rows"][number],
+): string {
+  const ranges: string[] = [];
+
+  for (let index = 0; index < row.cells.length; index += 1) {
+    const cell = row.cells[index];
+    if (!cell) continue;
+
+    let endIndex = index;
+    while (endIndex + 1 < row.cells.length && row.cells[endIndex + 1]?.code === cell.code) {
+      endIndex += 1;
+    }
+
+    const startDay = calendar.days[index]?.dayOfMonth;
+    const endDay = calendar.days[endIndex]?.dayOfMonth;
+    const dayRange = startDay === endDay ? String(startDay) : `${startDay}–${endDay}`;
+    ranges.push(`${cell.code} ${dayRange}`);
+    index = endIndex;
+  }
+
+  return `- **${row.name}:** ${ranges.join("; ")}`;
+}
+
+/**
+ * Claude-compatible Markdown: month data split into seven-day tables for
+ * desktop, followed by an event-only compact list that remains readable on
+ * mobile. Raw responsive HTML is intentionally avoided because clients may
+ * strip it and MCP does not receive viewport information.
+ */
+export function renderTeamCalendarMarkdown(
+  calendar: TeamMonthCalendar,
+  language: "en" | "vi",
+): string {
+  const monthLabel = monthCalendarTitle(calendar.month, language);
+  const title = language === "vi" ? `Lịch team · ${monthLabel}` : `Team schedule · ${monthLabel}`;
+  const nameHeader = language === "vi" ? "Thành viên" : "Member";
+  const emptyMsg =
+    language === "vi"
+      ? `Không ai nghỉ phép hoặc WFH trong ${monthLabel}.`
+      : `No leave or WFH scheduled in ${monthLabel}.`;
+  const legend =
+    language === "vi"
+      ? "_AL = nghỉ phép · AL? = chưa duyệt · WFH · SL = ốm · · = không nghỉ_"
+      : "_AL = leave · AL? = pending · WFH · SL = sick · · = available_";
+
+  if (calendar.rows.length === 0) {
+    return [`**${title}**`, "", emptyMsg, "", legend].join("\n");
+  }
+
+  const weekTables: string[] = [];
+  for (let start = 0; start < calendar.days.length; start += DAYS_PER_WEEK) {
+    const days = calendar.days.slice(start, start + DAYS_PER_WEEK);
+    const weekNumber = Math.floor(start / DAYS_PER_WEEK) + 1;
+    const weekLabel = language === "vi" ? `Tuần ${weekNumber}` : `Week ${weekNumber}`;
+    const dayHeaders = days.map((day) =>
+      day.isToday ? `**${day.dayOfMonth}**` : String(day.dayOfMonth),
+    );
+    const headerRow = `| ${nameHeader} | ${dayHeaders.join(" | ")} |`;
+    const separator = `| --- | ${days.map(() => "---").join(" | ")} |`;
+    const bodyRows = calendar.rows.map((row) => {
+      const cells = row.cells.slice(start, start + DAYS_PER_WEEK).map((cell) => cell?.code ?? "·");
+      return `| ${row.name} | ${cells.join(" | ")} |`;
+    });
+    weekTables.push(`**${weekLabel}**`, "", headerRow, separator, ...bodyRows, "");
+  }
+
+  const compactLabel = language === "vi" ? "Dạng gọn · mobile" : "Compact · mobile";
+  const compactRows = calendar.rows.map((row) => compactCalendarRow(calendar, row));
+
+  return [
+    `**${title}**`,
+    "",
+    ...weekTables,
+    `**${compactLabel}**`,
+    ...compactRows,
+    "",
+    legend,
+  ].join("\n");
+}
+
 export function renderTeamCalendarSection(
   calendar: TeamMonthCalendar | null | undefined,
   language: "en" | "vi",
 ): string | null {
   if (!calendar) return null;
-  return renderTeamCalendarHtml(calendar, language);
+  return renderTeamCalendarMarkdown(calendar, language);
 }

@@ -7,7 +7,10 @@ import {
   monthCalendarTitle,
 } from "../../src/lib/team-calendar.js";
 import type { Person } from "../../src/adapters/team-availability/mapper.js";
-import { renderTeamCalendarHtml } from "../../src/lib/team-calendar-render.js";
+import {
+  renderTeamCalendarHtml,
+  renderTeamCalendarMarkdown,
+} from "../../src/lib/team-calendar-render.js";
 
 function person(overrides: Partial<Person> = {}): Person {
   return {
@@ -85,6 +88,23 @@ describe("buildTeamMonthCalendar", () => {
 describe("monthCalendarTitle", () => {
   it("formats Vietnamese month title", () => {
     expect(monthCalendarTitle("2026-08", "vi")).toMatch(/2026/);
+  });
+});
+
+describe("renderTeamCalendarMarkdown", () => {
+  it("renders seven-day weekly tables plus a compact mobile list", () => {
+    const calendar = buildTeamMonthCalendar([person()], "2026-08-06");
+    const md = renderTeamCalendarMarkdown(calendar, "vi");
+    expect(md).toContain("**Lịch team ·");
+    expect(md).toContain("**Tuần 1**");
+    expect(md).toContain("| Thành viên |");
+    expect(md).toContain("| Alice Nguyen |");
+    expect(md).toContain("AL?");
+    expect(md).toContain("**Dạng gọn · mobile**");
+    expect(md).toContain("- **Alice Nguyen:** AL? 6–7");
+    expect(md).toContain("| Thành viên | 1 | 2 | 3 | 4 | 5 | **6** | 7 |");
+    expect(md).not.toContain("| 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 |");
+    expect(md).not.toContain("<div");
   });
 });
 

@@ -209,9 +209,9 @@ export function registerMorningBrief(server: McpServer): void {
       title: "Morning Brief — use ONLY for good morning / chào buổi sáng",
       description:
         "**Single call for daily morning brief (brief or standard).** Returns complete pre-rendered " +
-        "Morning Card markdown (Jira + team line + **Lịch team month calendar HTML**). " +
+        "Morning Card markdown (Jira + team line + **7-day weekly tables and compact mobile list**). " +
         "**Your next message MUST be the tool result pasted verbatim** — do NOT rewrite Team/Jira in prose, " +
-        "do NOT omit the `<div>Lịch team · tháng…</div>` HTML table, do NOT greet then summarize. " +
+        "do NOT omit the Lịch team weekly tables or compact list, do NOT greet then summarize. " +
         "**Do NOT call** jira_get_morning_context, team_availability_get_availability, Outlook, or Teams before replying. " +
         "Typical args: { language: \"en\"|\"vi\", detail: \"standard\" }.",
       inputSchema: MorningBriefInputShape,

@@ -134,8 +134,8 @@ describe("renderMorningCard", () => {
     });
     expect(md).toContain("Lịch team ·");
     expect(md).toContain("tháng 8 năm 2026");
-    expect(md).toContain("<div");
-    expect(md).toContain("Alice Nguyen");
+    expect(md).toContain("| Thành viên |");
+    expect(md).toContain("| Alice Nguyen |");
     expect(md).toContain("AL?");
   });
 });
