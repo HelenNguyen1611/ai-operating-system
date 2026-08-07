@@ -243,6 +243,8 @@ describe("TeamAvailabilityAdapter.getAvailability — snapshot validation", () =
       approved: false,
     });
     expect(aug6.events.find((e) => e.name === "Helen Nguyen")?.approved).toBe(true);
+    expect(aug6.month_calendar.rows.some((r) => r.name === "Alice Nguyen")).toBe(true);
+    expect(aug6.month_calendar.days).toHaveLength(31);
   });
 
   it("treats Pending approval_status as not approved", async () => {

@@ -2,14 +2,37 @@ import type { TeamAvailabilityResult } from "../adapters/team-availability/index
 import type { TeamAvailabilityEvent } from "../adapters/team-availability/mapper.js";
 
 export type TeamSummaryStatus = "loaded" | "not_configured" | "error";
+export type TeamCapacityStatus = "full" | "partial" | "unknown";
+
+/** Tailwind-like hex — inline HTML for Claude App markdown where supported; emoji as fallback. */
+const COLOR_GREEN = "#16a34a";
+const COLOR_YELLOW = "#ca8a04";
+const COLOR_MUTED = "#6b7280";
 
 export interface TeamSummaryResult {
   status: TeamSummaryStatus;
-  /** One-line text for Morning Card "Team:" bullet — copy verbatim. */
+  /** full = nobody out; partial = leave/WFH today; unknown = not loaded */
+  capacity: TeamCapacityStatus;
+  /** One-line HTML for Morning Card "Team:" bullet — copy verbatim. */
   line_en: string;
   line_vi: string;
-  /** Optional hint when data loaded but looks stale or empty for today. */
   warning?: string;
+}
+
+function teamLine(color: string, emoji: string, text: string): string {
+  return `<span style="color:${color}">${emoji} ${text}</span>`;
+}
+
+function teamLineGreen(text: string): string {
+  return teamLine(COLOR_GREEN, "🟢", text);
+}
+
+function teamLineYellow(text: string): string {
+  return teamLine(COLOR_YELLOW, "🟡", text);
+}
+
+function teamLineMuted(text: string): string {
+  return teamLine(COLOR_MUTED, "⚪", text);
 }
 
 function formatEvent(event: TeamAvailabilityEvent, language: "en" | "vi"): string {
@@ -36,16 +59,17 @@ function buildLoadedLines(result: TeamAvailabilityResult): TeamSummaryResult {
       snapshot_people_total > 0 &&
       snapshot_latest_end_date !== "" &&
       snapshot_latest_end_date < date;
-    const staleNote = stale
-      ? ` (warning: leave snapshot may be outdated — latest record ends ${snapshot_latest_end_date})`
+    const staleNoteEn = stale
+      ? ` (snapshot may be outdated — latest record ends ${snapshot_latest_end_date})`
       : "";
     const staleNoteVi = stale
-      ? ` (cảnh báo: snapshot nghỉ có thể lỗi thời — bản ghi mới nhất đến ${snapshot_latest_end_date})`
+      ? ` (snapshot có thể lỗi thời — bản ghi mới nhất đến ${snapshot_latest_end_date})`
       : "";
     return {
       status: "loaded",
-      line_en: `No leave or WFH recorded for ${date} — full team capacity expected (leave snapshot checked)${staleNote}`,
-      line_vi: `Không ghi nhận nghỉ/WFH ngày ${date} — team đủ người (đã kiểm tra snapshot)${staleNoteVi}`,
+      capacity: "full",
+      line_en: teamLineGreen(`Full team — no one on leave or WFH today.${staleNoteEn}`),
+      line_vi: teamLineGreen(`Full team — không ai nghỉ phép hôm nay.${staleNoteVi}`),
       warning: stale
         ? `Leave snapshot has ${snapshot_people_total} records but none cover ${date}; latest end_date is ${snapshot_latest_end_date}. Check Power Automate export.`
         : undefined,
@@ -67,10 +91,14 @@ function buildLoadedLines(result: TeamAvailabilityResult): TeamSummaryResult {
     partsVi.push(formatNames(pending, "vi"));
   }
 
+  const textEn = partsEn.join("; ");
+  const textVi = partsVi.join("; ");
+
   return {
     status: "loaded",
-    line_en: partsEn.join("; "),
-    line_vi: partsVi.join("; "),
+    capacity: "partial",
+    line_en: teamLineYellow(textEn),
+    line_vi: teamLineYellow(textVi),
     warning:
       pending.length > 0
         ? `${pending.length} pending leave record(s) on ${date} — treat as likely absence until approved or rejected.`
@@ -86,22 +114,29 @@ export function buildTeamSummary(
     if (teamAvailabilityError.includes("ADAPTER_NOT_CONFIGURED")) {
       return {
         status: "not_configured",
-        line_en: "Not verified — team availability source not configured",
-        line_vi: "Chưa xác minh — chưa cấu hình nguồn team availability",
+        capacity: "unknown",
+        line_en: teamLineMuted("Not verified — team availability source not configured"),
+        line_vi: teamLineMuted("Chưa xác minh — chưa cấu hình nguồn team availability"),
       };
     }
     return {
       status: "error",
-      line_en: `Not verified — team availability error (${teamAvailabilityError.slice(0, 120)})`,
-      line_vi: `Chưa xác minh — lỗi team availability (${teamAvailabilityError.slice(0, 120)})`,
+      capacity: "unknown",
+      line_en: teamLineMuted(
+        `Not verified — team availability error (${teamAvailabilityError.slice(0, 120)})`,
+      ),
+      line_vi: teamLineMuted(
+        `Chưa xác minh — lỗi team availability (${teamAvailabilityError.slice(0, 120)})`,
+      ),
     };
   }
 
   if (!teamAvailability) {
     return {
       status: "not_configured",
-      line_en: "Not verified — team availability not loaded",
-      line_vi: "Chưa xác minh — chưa load team availability",
+      capacity: "unknown",
+      line_en: teamLineMuted("Not verified — team availability not loaded"),
+      line_vi: teamLineMuted("Chưa xác minh — chưa load team availability"),
     };
   }
 

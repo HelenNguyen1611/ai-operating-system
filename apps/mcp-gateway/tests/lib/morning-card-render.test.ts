@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderMorningCard } from "../../src/lib/morning-card-render.js";
+import { buildTeamMonthCalendar } from "../../src/lib/team-calendar.js";
 import type { MorningLiveContext } from "../../src/lib/live-context-fetch.js";
 import type { JiraMorningContext } from "../../src/adapters/jira/index.js";
 
@@ -32,7 +33,22 @@ function jiraContext(overrides: Partial<JiraMorningContext> = {}): JiraMorningCo
 function live(overrides: Partial<MorningLiveContext> = {}): MorningLiveContext {
   return {
     jira: jiraContext(),
-    team_availability: null,
+    team_availability: {
+      date: "2026-08-06",
+      team_scope: "all",
+      events: [],
+      generated_at: "2026-08-06T07:00:00+07:00",
+      timezone: "Asia/Ho_Chi_Minh",
+      snapshot_people_total: 10,
+      snapshot_latest_end_date: "2026-12-31",
+      month_calendar: {
+        month: "2026-08",
+        start_date: "2026-08-01",
+        end_date: "2026-08-31",
+        days: [{ date: "2026-08-06", dayOfMonth: 6, isToday: true, isWeekend: false }],
+        rows: [],
+      },
+    },
     team_summary: {
       status: "loaded",
       line_en: "No approved leave or WFH for 2026-08-06 — full team capacity expected",
@@ -84,5 +100,42 @@ describe("renderMorningCard", () => {
     expect(md).toContain("### Tóm tắt nhanh");
     expect(md).toContain("### Tổng quan");
     expect(md).toContain("team đủ người");
+  });
+
+  it("includes team calendar table when month_calendar has rows", () => {
+    const md = renderMorningCard({
+      language: "vi",
+      detail: "standard",
+      timezone: "Asia/Ho_Chi_Minh",
+      live: live({
+        team_availability: {
+          date: "2026-08-06",
+          team_scope: "all",
+          events: [],
+          generated_at: "2026-08-06T07:00:00+07:00",
+          timezone: "Asia/Ho_Chi_Minh",
+          snapshot_people_total: 2,
+          snapshot_latest_end_date: "2026-08-07",
+          month_calendar: buildTeamMonthCalendar(
+            [
+              {
+                name: "Alice Nguyen",
+                start_date: "2026-08-06",
+                end_date: "2026-08-07",
+                availability_type: "Annual Leave",
+                approval_status: "",
+              },
+            ],
+            "2026-08-06",
+          ),
+        },
+      }),
+      jiraBaseUrl: "https://jira.example.com",
+    });
+    expect(md).toContain("Lịch team ·");
+    expect(md).toContain("tháng 8 năm 2026");
+    expect(md).toContain("<div");
+    expect(md).toContain("Alice Nguyen");
+    expect(md).toContain("AL?");
   });
 });

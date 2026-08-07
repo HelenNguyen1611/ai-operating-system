@@ -3,6 +3,7 @@ import { TeamAvailabilitySnapshotReader, type TeamAvailabilitySnapshotReaderOpti
 import { isActiveOnDate, mapPerson, type TeamAvailabilityEvent } from "./mapper.js";
 import { TeamAvailabilityConfigInvalidError, TeamAvailabilitySnapshotStaleError } from "./errors.js";
 import { getDisplayTimezone, RuntimeConfigInvalidError } from "../../lib/runtime-config.js";
+import { buildTeamMonthCalendar, type TeamMonthCalendar } from "../../lib/team-calendar.js";
 
 const APPROVED_TEAM_SCOPE = "all";
 
@@ -24,6 +25,8 @@ export interface TeamAvailabilityResult {
   snapshot_people_total: number;
   /** Latest end_date across all snapshot records (YYYY-MM-DD). */
   snapshot_latest_end_date: string;
+  /** Full-month grid of leave/WFH for the month containing `date`. */
+  month_calendar: TeamMonthCalendar;
 }
 
 export interface TeamAvailabilityAdapterOptions extends TeamAvailabilitySnapshotReaderOptions {
@@ -109,6 +112,8 @@ export class TeamAvailabilityAdapter {
       "",
     );
 
+    const month_calendar = buildTeamMonthCalendar(snapshot.people, date);
+
     return {
       date,
       team_scope: teamScope,
@@ -117,6 +122,7 @@ export class TeamAvailabilityAdapter {
       timezone,
       snapshot_people_total: snapshot.people.length,
       snapshot_latest_end_date,
+      month_calendar,
     };
   }
 }

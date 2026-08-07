@@ -2,6 +2,7 @@ import type { JiraMorningContext } from "../adapters/jira/index.js";
 import type { JiraIssueSummary } from "../adapters/jira/mapper.js";
 import type { MorningLiveContext } from "./live-context-fetch.js";
 import type { TeamSummaryResult } from "./team-summary.js";
+import { renderTeamCalendarSection } from "./team-calendar-render.js";
 
 export interface RenderMorningCardInput {
   language: "en" | "vi";
@@ -185,6 +186,10 @@ export function renderMorningCard(input: RenderMorningCardInput): string {
   const L = LABELS[language];
   const { weekday, date } = formatHeaderDate(timezone);
   const teamLine = language === "vi" ? live.team_summary.line_vi : live.team_summary.line_en;
+  const teamCalendarBlock = renderTeamCalendarSection(
+    live.team_availability?.month_calendar,
+    language,
+  );
   const conf = confidenceLevel(live);
   const confLabel = L[conf === "high" ? "high" : conf === "medium" ? "medium" : "low"];
 
@@ -260,6 +265,7 @@ export function renderMorningCard(input: RenderMorningCardInput): string {
     "",
     `### ${L.atGlance}`,
     `- **${L.team}:** ${teamLine}`,
+    ...(teamCalendarBlock ? ["", teamCalendarBlock] : []),
     `- **${L.calendar}:** ${L.calendarDefault}`,
     jiraLine,
     "",
