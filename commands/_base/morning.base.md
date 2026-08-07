@@ -24,13 +24,14 @@ Triggers: `good morning`, `chào buổi sáng`, `morning brief`, `báo cáo đ�
 
 1. Call **`morning_brief` once** — `{ language: "en"|"vi", detail: "standard" }` (or `brief`).
 2. **Paste the returned markdown verbatim** — complete Morning Card (Jira + team + **Lịch team HTML table**). Do **not** strip or reformat the `<div>…Lịch team…</div>` block between Team and Lịch lines.
-3. **Forbidden before replying** (unless user explicitly asked for email/calendar/Teams or `detail: full`):
+3. **Anti-patterns (wrong):** greeting + rewritten bullets; "Các thành viên khác không có leave"; prose Team section without HTML calendar; asking to load M365 before showing the card.
+4. **Forbidden before replying** (unless user explicitly asked for email/calendar/Teams or `detail: full`):
    - Outlook calendar search
    - Outlook email search
    - Teams / chat message search
    - `jira_get_morning_context`
    - `team_availability_get_availability`
-4. Call **`daily_report_save` after** the user sees the brief (non-blocking).
+5. Call **`daily_report_save` after** the user sees the brief (non-blocking).
 
 Skip Step 1 handbook loading, Email Retrieval Strategy, and Standard collection below for this path.
 

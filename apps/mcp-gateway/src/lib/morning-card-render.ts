@@ -249,7 +249,7 @@ export function renderMorningCard(input: RenderMorningCardInput): string {
   const risks = buildRisks(live, L, ranked.length);
 
   const lines = [
-    "<!-- MORNING_CARD: Present everything below verbatim. Forbidden: timeline blocks and legacy attention/resolved lists. -->",
+    "<!-- MORNING_CARD: Paste EVERYTHING below verbatim in your reply. REQUIRED: keep the HTML block Lịch team · tháng … (month grid). Forbidden: rewrite, summarize, or omit HTML. -->",
     "",
     `# ${L.title}`,
     `**${weekday}, ${date}** · ${timezone} · ${detail}`,

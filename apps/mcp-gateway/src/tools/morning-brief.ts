@@ -208,12 +208,12 @@ export function registerMorningBrief(server: McpServer): void {
     {
       title: "Morning Brief — use ONLY for good morning / chào buổi sáng",
       description:
-        "**Single call for daily morning brief (brief or standard).** Returns a complete pre-rendered " +
-        "Morning Card markdown (Jira + team + month calendar HTML already included). **Show the tool result verbatim** in your " +
-        "next message — do NOT reformat. **Do NOT call** jira_get_morning_context, " +
-        "team_availability_get_availability, Outlook calendar, Outlook email, or Teams chat search before " +
-        "or after this tool unless the user explicitly asked for email/calendar/Teams focus or detail=full. " +
-        "Typical args: { language: \"en\"|\"vi\", detail: \"standard\" }. For detail full: returns framework JSON.",
+        "**Single call for daily morning brief (brief or standard).** Returns complete pre-rendered " +
+        "Morning Card markdown (Jira + team line + **Lịch team month calendar HTML**). " +
+        "**Your next message MUST be the tool result pasted verbatim** — do NOT rewrite Team/Jira in prose, " +
+        "do NOT omit the `<div>Lịch team · tháng…</div>` HTML table, do NOT greet then summarize. " +
+        "**Do NOT call** jira_get_morning_context, team_availability_get_availability, Outlook, or Teams before replying. " +
+        "Typical args: { language: \"en\"|\"vi\", detail: \"standard\" }.",
       inputSchema: MorningBriefInputShape,
     },
     async (args) => {
