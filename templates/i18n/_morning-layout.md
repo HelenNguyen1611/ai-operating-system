@@ -35,6 +35,14 @@ In Snapshot confidence line, show which live sources were loaded:
 
 `Jira ✓` · `Team ✓` · `Calendar ✓` · `Email ✓` · `Teams ○` · `Confluence ○`
 
+Team line in At a glance uses color (HTML + emoji fallback):
+
+| Status | Color | Example (VI) |
+|--------|-------|----------------|
+| Full team | 🟢 green | Full team — không ai nghỉ phép hôm nay. |
+| Leave / WFH / pending | 🟡 yellow | Alice — Annual Leave (chưa approve) |
+| Not loaded | ⚪ muted | Chưa xác minh |
+
 - `✓` = loaded with data
 - `○` = not loaded or unavailable
 - `!` = loaded but error (use sparingly)
@@ -102,7 +110,7 @@ Natural-language triggers follow the **same Morning Card layout** as slash comma
 
 - Skip Team or Jira link when tools were available to call
 - Use timeline layouts (morning/midday/afternoon) or Needs attention/Resolved sections — use Morning Card only
-- Use HTML (Claude App markdown only)
+- Rebuild the card from this template when using `detail: full` — for brief/standard, paste gateway `morning_brief` markdown verbatim (includes required HTML for team calendar)
 - Use nested tables
 - Duplicate the same issue in Top 3 and Next 2
 - Add filler text before the Snapshot block

@@ -18,7 +18,7 @@ Use with `commands/_base/morning.base.md` and `templates/i18n/_morning-layout.md
 ---
 
 ### At a glance
-- **Team:** {copy `live.team_summary.line_en` verbatim — mandatory even when no one is on leave}
+- **Team:** {copy `live.team_summary.line_en` verbatim — 🟢 green = full team; 🟡 yellow = leave/WFH today}
 - **Calendar:** {next event or "no meetings" — times in local TZ}
 - **Jira:** {open_count} open · due today {n} · overdue {n} · [View all open tasks →]({filter_url})
 

@@ -18,7 +18,8 @@ Use with `commands/_base/morning.base.md` and `templates/i18n/_morning-layout.md
 ---
 
 ### Tổng quan
-- **Team:** {copy `live.team_summary.line_vi` verbatim — bắt buộc, kể cả khi không ai nghỉ}
+- **Team:** {copy `live.team_summary.line_vi` verbatim — 🟢 xanh = full team; 🟡 vàng = có nghỉ/WFH}
+- **Lịch team:** {card HTML tháng hiện tại — cột 1–31, cuộn ngang; badge AL/WFH/SL}
 - **Lịch:** {sự kiện sắp tới hoặc "không có meeting" — giờ local}
 - **Jira:** {open_count} mở · due hôm nay {n} · quá hạn {n} · [Xem tất cả task mở →]({filter_url})
 

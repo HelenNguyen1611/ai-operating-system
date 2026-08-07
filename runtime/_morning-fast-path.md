@@ -6,8 +6,8 @@ Condensed rules for Claude App `morning_brief` when `detail` is `brief` or `stan
 
 1. **ONE tool call:** `morning_brief({ language, detail: "standard" })` — nothing else before replying.
 2. **Forbidden before reply:** Outlook calendar, Outlook email, Teams/chat search, `jira_get_morning_context`, `team_availability_get_availability`.
-3. **Output:** paste returned markdown **verbatim** — complete Morning Card (Jira + team pre-filled).
-4. **No reformat:** no timeline, no Needs attention/Resolved sections.
+3. **Output:** paste returned markdown **verbatim** — complete Morning Card (Jira + team + **Lịch team HTML table** pre-filled).
+4. **No reformat:** no timeline, no Needs attention/Resolved sections. **Forbidden:** rewrite Team/Jira in your own words; **must include** the `<div>…Lịch team · tháng…</div>` HTML block from the tool (between Team line and Lịch line). Do not offer "bổ sung Calendar" before showing the card.
 5. **`daily_report_save` after** the user sees the brief — never block the reply on save.
 
 Email/calendar/Teams only when user **explicitly** asked (e.g. "focus on Travis email") or `detail: full`.
@@ -16,6 +16,7 @@ Email/calendar/Teams only when user **explicitly** asked (e.g. "focus on Travis 
 
 - Jira Top 3 + Next 2 (from live buckets)
 - Team line (from leave snapshot)
+- **Team month calendar** — HTML grid `Lịch team · tháng …` (1–31 columns)
 - Jira open count + filter link
 - Snapshot, Risks, Stand-up skeleton
 

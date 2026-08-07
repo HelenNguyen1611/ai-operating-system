@@ -209,7 +209,7 @@ export function registerMorningBrief(server: McpServer): void {
       title: "Morning Brief — use ONLY for good morning / chào buổi sáng",
       description:
         "**Single call for daily morning brief (brief or standard).** Returns a complete pre-rendered " +
-        "Morning Card markdown (Jira + team already included). **Show the tool result verbatim** in your " +
+        "Morning Card markdown (Jira + team + month calendar HTML already included). **Show the tool result verbatim** in your " +
         "next message — do NOT reformat. **Do NOT call** jira_get_morning_context, " +
         "team_availability_get_availability, Outlook calendar, Outlook email, or Teams chat search before " +
         "or after this tool unless the user explicitly asked for email/calendar/Teams focus or detail=full. " +

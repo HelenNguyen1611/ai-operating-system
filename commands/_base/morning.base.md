@@ -23,7 +23,7 @@ Triggers: `good morning`, `chào buổi sáng`, `morning brief`, `báo cáo đ�
 **Goal: one tool call, reply in under 30 seconds.**
 
 1. Call **`morning_brief` once** — `{ language: "en"|"vi", detail: "standard" }` (or `brief`).
-2. **Paste the returned markdown verbatim** — it is the complete Morning Card (Jira + team included).
+2. **Paste the returned markdown verbatim** — complete Morning Card (Jira + team + **Lịch team HTML table**). Do **not** strip or reformat the `<div>…Lịch team…</div>` block between Team and Lịch lines.
 3. **Forbidden before replying** (unless user explicitly asked for email/calendar/Teams or `detail: full`):
    - Outlook calendar search
    - Outlook email search
@@ -39,7 +39,7 @@ Skip Step 1 handbook loading, Email Retrieval Strategy, and Standard collection 
 | Source | In `morning_brief` (standard)? | Notes |
 |--------|----------------------------------|-------|
 | **Jira** | Yes | Top 3, Next 2, open count, filter link |
-| **Team availability** | Yes | Leave/WFH line from snapshot (`live.team_summary`) |
+| **Team availability** | Yes | Team line + **month calendar HTML** (Lịch team · tháng …) from gateway |
 | **Calendar** | No (gateway) | M365 Outlook — not in gateway yet |
 | **Email** | No (gateway) | M365 Outlook — not in gateway yet |
 | **Teams chat** | No (gateway) | Native Claude connector only |
@@ -212,7 +212,7 @@ Same card structure for:
 
 - `/morning` and `/chaobuoisang`
 - natural language: "good morning", "chào buổi sáng", "prepare my morning brief", "báo cáo đầu ngày"
-- Claude App desktop and mobile (markdown only — no HTML, no wide tables in brief/standard)
+- Claude App desktop and mobile — paste `morning_brief` output verbatim (includes inline HTML for team color + month calendar card; do not rebuild from template)
 
 Apply the selected **language** and **detail** mode.
 
