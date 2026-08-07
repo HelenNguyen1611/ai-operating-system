@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { renderMorningCard } from "../../src/lib/morning-card-render.js";
+import {
+  MorningCardContractError,
+  renderMorningCard,
+  validateMorningCardMarkdown,
+} from "../../src/lib/morning-card-render.js";
 import { buildTeamMonthCalendar } from "../../src/lib/team-calendar.js";
 import type { MorningLiveContext } from "../../src/lib/live-context-fetch.js";
 import type { JiraMorningContext } from "../../src/adapters/jira/index.js";
@@ -137,5 +141,55 @@ describe("renderMorningCard", () => {
     expect(md).toContain("| Thành viên |");
     expect(md).toContain("| Alice Nguyen |");
     expect(md).toContain("AL?");
+  });
+
+  it("keeps every required section in the canonical order", () => {
+    const md = renderMorningCard({
+      language: "en",
+      detail: "standard",
+      timezone: "Asia/Ho_Chi_Minh",
+      live: live(),
+      jiraBaseUrl: "https://jira.example.com",
+    });
+    const markers = [
+      "# Morning Brief",
+      "### Snapshot",
+      "### At a glance",
+      "### Priorities",
+      "### Risks",
+      "### Stand-up",
+    ];
+    const positions = markers.map((marker) => md.indexOf(marker));
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+
+  it("rejects legacy timeline-shaped output", () => {
+    const legacy = [
+      "# Morning Brief",
+      "### Snapshot",
+      "### At a glance",
+      "### Priorities",
+      "### Needs attention",
+      "### Risks",
+      "### Stand-up",
+    ].join("\n");
+    expect(() => validateMorningCardMarkdown(legacy, "en", false)).toThrow(
+      MorningCardContractError,
+    );
+  });
+
+  it("requires both calendar representations when team rows exist", () => {
+    const cardWithoutCalendar = [
+      "# Morning Brief",
+      "### Snapshot",
+      "### At a glance",
+      "### Priorities",
+      "### Risks",
+      "### Stand-up",
+    ].join("\n");
+    expect(() => validateMorningCardMarkdown(cardWithoutCalendar, "en", true)).toThrow(
+      "missing weekly team calendar",
+    );
   });
 });

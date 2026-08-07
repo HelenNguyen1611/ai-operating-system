@@ -18,6 +18,13 @@ interface RankedIssue {
   why: string;
 }
 
+export class MorningCardContractError extends Error {
+  constructor(message: string) {
+    super(`Morning Card contract violation: ${message}`);
+    this.name = "MorningCardContractError";
+  }
+}
+
 const LABELS = {
   en: {
     title: "Morning Brief",
@@ -178,6 +185,63 @@ function buildRisks(
 }
 
 /**
+ * Fail closed when a renderer change breaks the public Morning Card layout.
+ * This guarantees the MCP tool never emits a partially ordered or legacy
+ * timeline-shaped card. It cannot control whether a client model rewrites a
+ * valid tool result after receiving it.
+ */
+export function validateMorningCardMarkdown(
+  markdown: string,
+  language: "en" | "vi",
+  hasTeamCalendar: boolean,
+): void {
+  const L = LABELS[language];
+  const requiredInOrder = [
+    `# ${L.title}`,
+    `### ${L.snapshot}`,
+    `### ${L.atGlance}`,
+    `### ${L.priorities}`,
+    `### ${L.risks}`,
+    `### ${L.standup}`,
+  ];
+
+  let previousIndex = -1;
+  for (const marker of requiredInOrder) {
+    const markerIndex = markdown.indexOf(marker);
+    if (markerIndex === -1) {
+      throw new MorningCardContractError(`missing required section: ${marker}`);
+    }
+    if (markerIndex <= previousIndex) {
+      throw new MorningCardContractError(`section out of order: ${marker}`);
+    }
+    previousIndex = markerIndex;
+  }
+
+  const forbiddenPatterns: Array<[RegExp, string]> = [
+    [/^###? Needs attention$/im, "legacy Needs attention section"],
+    [/^###? Resolved$/im, "legacy Resolved section"],
+    [/^###? (morning|midday|afternoon)$/im, "legacy timeline section"],
+    [/^\d{1,2}(?::\d{2})?\s*(?:AM|PM)?\s*[–-]\s*\d{1,2}(?::\d{2})?\s*(?:AM|PM)$/im, "hour-block timeline"],
+  ];
+  for (const [pattern, label] of forbiddenPatterns) {
+    if (pattern.test(markdown)) {
+      throw new MorningCardContractError(`forbidden ${label}`);
+    }
+  }
+
+  if (hasTeamCalendar) {
+    const weeklyLabel = language === "vi" ? "**Tuần 1**" : "**Week 1**";
+    const compactLabel = language === "vi" ? "**Dạng gọn · mobile**" : "**Compact · mobile**";
+    if (!markdown.includes(weeklyLabel)) {
+      throw new MorningCardContractError("missing weekly team calendar");
+    }
+    if (!markdown.includes(compactLabel)) {
+      throw new MorningCardContractError("missing compact mobile team calendar");
+    }
+  }
+}
+
+/**
  * Server-rendered Morning Card markdown for brief/standard.
  * Designed to be shown verbatim by the client — no alternate layouts.
  */
@@ -249,7 +313,7 @@ export function renderMorningCard(input: RenderMorningCardInput): string {
   const risks = buildRisks(live, L, ranked.length);
 
   const lines = [
-    "<!-- MORNING_CARD: Paste EVERYTHING below verbatim. REQUIRED: keep the weekly 7-day tables and compact mobile list under Lịch team · tháng …. Forbidden: rewrite or omit calendar. -->",
+    "<!-- MORNING_CARD: Keep all sections and ordering verbatim. The ONLY allowed edit is replacing the Calendar line with today's next 3 Outlook Calendar events. Keep the weekly leave/WFH tables and compact mobile list unchanged. -->",
     "",
     `# ${L.title}`,
     `**${weekday}, ${date}** · ${timezone} · ${detail}`,
@@ -290,5 +354,8 @@ export function renderMorningCard(input: RenderMorningCardInput): string {
     "---",
   ];
 
-  return lines.join("\n");
+  const markdown = lines.join("\n");
+  const hasPopulatedTeamCalendar = (live.team_availability?.month_calendar.rows.length ?? 0) > 0;
+  validateMorningCardMarkdown(markdown, language, hasPopulatedTeamCalendar);
+  return markdown;
 }

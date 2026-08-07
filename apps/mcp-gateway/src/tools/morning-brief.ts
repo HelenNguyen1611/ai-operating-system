@@ -94,7 +94,8 @@ function buildInstructions(input: MorningBriefInput): string {
       "context.layout + context.template — no other format (no timeline, no Needs attention/Resolved sections). " +
       "Render in your **next message**. " + teamHint + " " +
       "Do NOT call jira_get_morning_context or team_availability_get_availability. " +
-      "Skip email/calendar unless user asked. Call daily_report_save after the user sees the brief."
+      "Optionally look up today's next 3 Outlook Calendar events and replace only the Calendar line. " +
+      "Skip Outlook Mail and Teams unless asked. Call daily_report_save after the user sees the brief."
     );
   }
 
@@ -208,11 +209,11 @@ export function registerMorningBrief(server: McpServer): void {
     {
       title: "Morning Brief — use ONLY for good morning / chào buổi sáng",
       description:
-        "**Single call for daily morning brief (brief or standard).** Returns complete pre-rendered " +
+        "**Primary tool for daily morning brief (brief or standard).** Returns complete pre-rendered " +
         "Morning Card markdown (Jira + team line + **7-day weekly tables and compact mobile list**). " +
-        "**Your next message MUST be the tool result pasted verbatim** — do NOT rewrite Team/Jira in prose, " +
+        "Keep the tool result verbatim except you MAY replace only its Calendar line after one Outlook Calendar lookup for today's next 3 events. Do NOT rewrite Team/Jira in prose, " +
         "do NOT omit the Lịch team weekly tables or compact list, do NOT greet then summarize. " +
-        "**Do NOT call** jira_get_morning_context, team_availability_get_availability, Outlook, or Teams before replying. " +
+        "**Do NOT call** jira_get_morning_context, team_availability_get_availability, Outlook Mail, or Teams. " +
         "Typical args: { language: \"en\"|\"vi\", detail: \"standard\" }.",
       inputSchema: MorningBriefInputShape,
     },

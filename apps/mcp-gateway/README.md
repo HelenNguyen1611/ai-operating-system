@@ -13,7 +13,7 @@ For the full operational runbook (setup, running, Cloudflare Tunnel, Claude Desk
 ```bash
 cd apps/mcp-gateway
 npm install
-npm run typecheck && npm test   # currently 118 tests
+npm run typecheck && npm test   # currently 121 tests
 npm run dev                       # listens on :3000
 ```
 
@@ -77,7 +77,7 @@ src/
   schemas/          Zod input validation, one folder per domain
   types/             Shared cross-cutting types (currently: the error envelope)
   lib/                Infrastructure helpers (safe repo-relative paths)
-tests/             Vitest — currently 118 tests across 11 test files
+tests/             Vitest — currently 121 tests across 11 test files
 ```
 
 See the Operations Handbook §3 for the fully annotated version of this tree.
