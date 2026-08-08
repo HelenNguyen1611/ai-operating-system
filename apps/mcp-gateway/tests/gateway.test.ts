@@ -112,7 +112,8 @@ describe("morning_brief — English brief payload (end-to-end via MCP)", () => {
       expect(markdown).toContain("### Snapshot");
       expect(markdown).toContain("### At a glance");
       expect(markdown).toContain("**Team:**");
-      expect(markdown).toContain("MORNING_CARD");
+      expect(markdown).toMatch(/^# Morning Brief/);
+      expect(markdown).not.toContain("MORNING_CARD");
       expect(markdown).not.toContain("Needs attention");
     } finally {
       await client.close();

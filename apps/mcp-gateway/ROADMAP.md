@@ -10,7 +10,7 @@ Each phase is gated on review of the previous one. No phase starts implementatio
 
 - **8 MCP tools:** `health_check`, `morning_brief`, three `jira_*` tools, `team_availability_get_availability`, `daily_report_save`, and `daily_report_get`.
 - **3 adapter boundaries:** Jira Cloud (read-only HTTP), Team Availability (read-only local JSON snapshot), and Daily Report (local per-day JSON persistence).
-- **121 Vitest cases across 11 test files** at the current collection count. Earlier 4/10/31 counts below are retained as historical phase verification records.
+- **124 Vitest cases across 11 test files** at the current collection count. Earlier 4/10/31 counts below are retained as historical phase verification records.
 - `morning_brief.detail` currently accepts `"brief"`, `"standard"`, and `"full"`.
 - Phase 3 authentication, rate limiting, session strategy, and production deployment remain unimplemented.
 

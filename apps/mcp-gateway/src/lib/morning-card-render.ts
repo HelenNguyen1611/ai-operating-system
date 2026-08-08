@@ -18,6 +18,8 @@ interface RankedIssue {
   why: string;
 }
 
+const PRIORITY_DISPLAY_LIMIT = 10;
+
 export class MorningCardContractError extends Error {
   constructor(message: string) {
     super(`Morning Card contract violation: ${message}`);
@@ -40,8 +42,9 @@ const LABELS = {
     jiraViewAll: "View all open tasks →",
     calendarDefault: "not loaded via gateway — add from M365 if connected",
     priorities: "Priorities",
-    top3: "Top 3",
-    next2: "Next 2",
+    priorityList: "Ranked open issues",
+    showingIssues: (shown: number, total: number) => `Showing ${shown} of ${total} open issue(s)`,
+    viewRemaining: "View all open issues →",
     risks: "Risks",
     standup: "Stand-up",
     high: "High",
@@ -49,7 +52,7 @@ const LABELS = {
     low: "Low",
     noneQualify: "No further ranked items today",
     fewerCandidates: (n: number) => `Only ${n} candidate(s) available today`,
-    firstActionFallback: "Review Top 3 and pick the first executable item",
+    firstActionFallback: "Review open issues and pick the first executable item",
     missionFallback: "Clear highest-impact delivery items before stand-up",
     riskJira: "Jira priorities loaded from live context",
     riskTeamStale: (w: string) => w,
@@ -69,8 +72,9 @@ const LABELS = {
     jiraViewAll: "Xem tất cả task mở →",
     calendarDefault: "chưa load qua gateway — bổ sung từ M365 nếu đã kết nối",
     priorities: "Ưu tiên",
-    top3: "Top 3",
-    next2: "2 việc tiếp theo",
+    priorityList: "Issue mở đã xếp hạng",
+    showingIssues: (shown: number, total: number) => `Đang hiển thị ${shown} / tổng ${total} issue mở`,
+    viewRemaining: "Xem đầy đủ issue mở →",
     risks: "Rủi ro",
     standup: "Stand-up",
     high: "Cao",
@@ -78,7 +82,7 @@ const LABELS = {
     low: "Thấp",
     noneQualify: "Không còn item xếp hạng thêm hôm nay",
     fewerCandidates: (n: number) => `Chỉ có ${n} candidate hôm nay`,
-    firstActionFallback: "Xem Top 3 và chọn việc có thể làm ngay",
+    firstActionFallback: "Xem danh sách issue mở và chọn việc có thể làm ngay",
     missionFallback: "Xử lý các hạng mục delivery quan trọng nhất trước stand-up",
     riskJira: "Ưu tiên Jira từ live context",
     riskTeamStale: (w: string) => w,
@@ -104,8 +108,13 @@ function jiraFilterUrl(baseUrl: string): string {
 }
 
 function rankIssues(jira: JiraMorningContext, language: "en" | "vi"): RankedIssue[] {
+  // recently_updated intentionally includes recently completed work for
+  // reporting. Priorities, however, must only contain issues still present in
+  // assigned_open. Keep the data contract and presentation concern separate.
+  const openKeys = new Set(jira.assigned_open.map((issue) => issue.key));
   const overdueKeys = new Set(jira.overdue.map((i) => i.key));
   const dueTodayKeys = new Set(jira.due_today.map((i) => i.key));
+  const recentlyUpdatedKeys = new Set(jira.recently_updated.map((i) => i.key));
   const seen = new Set<string>();
   const ranked: RankedIssue[] = [];
 
@@ -118,6 +127,7 @@ function rankIssues(jira: JiraMorningContext, language: "en" | "vi"): RankedIssu
 
   for (const bucket of buckets) {
     for (const issue of bucket) {
+      if (!openKeys.has(issue.key)) continue;
       if (seen.has(issue.key)) continue;
       seen.add(issue.key);
 
@@ -133,7 +143,7 @@ function rankIssues(jira: JiraMorningContext, language: "en" | "vi"): RankedIssu
       } else if (dueTodayKeys.has(issue.key)) {
         quadrant = "Q1";
         why = language === "vi" ? "Due hôm nay" : "Due today";
-      } else if (jira.recently_updated.some((i) => i.key === issue.key)) {
+      } else if (recentlyUpdatedKeys.has(issue.key)) {
         quadrant = "Q2";
         why = language === "vi" ? "Cập nhật hôm nay" : "Updated today";
       } else {
@@ -258,21 +268,21 @@ export function renderMorningCard(input: RenderMorningCardInput): string {
   const confLabel = L[conf === "high" ? "high" : conf === "medium" ? "medium" : "low"];
 
   const ranked = live.jira ? rankIssues(live.jira, language) : [];
-  const top3 = ranked.slice(0, 3);
-  const next2 = ranked.slice(3, 5);
+  const displayedPriorities = ranked.slice(0, PRIORITY_DISPLAY_LIMIT);
+  const primaryPriorities = displayedPriorities.slice(0, 3);
 
   const firstAction =
-    top3.length > 0
+    displayedPriorities.length > 0
       ? language === "vi"
-        ? `Bắt đầu ${top3[0].issue.key} — ${top3[0].issue.summary || top3[0].why}`
-        : `Start ${top3[0].issue.key} — ${top3[0].issue.summary || top3[0].why}`
+        ? `Bắt đầu ${displayedPriorities[0].issue.key} — ${displayedPriorities[0].issue.summary || displayedPriorities[0].why}`
+        : `Start ${displayedPriorities[0].issue.key} — ${displayedPriorities[0].issue.summary || displayedPriorities[0].why}`
       : L.firstActionFallback;
 
   const mission =
-    top3.length > 0
+    primaryPriorities.length > 0
       ? language === "vi"
-        ? `Hoàn thành ${top3.map((t) => t.issue.key).join(", ")}`
-        : `Progress ${top3.map((t) => t.issue.key).join(", ")}`
+        ? `Hoàn thành ${primaryPriorities.map((t) => t.issue.key).join(", ")}`
+        : `Progress ${primaryPriorities.map((t) => t.issue.key).join(", ")}`
       : L.missionFallback;
 
   let jiraLine: string;
@@ -293,19 +303,24 @@ export function renderMorningCard(input: RenderMorningCardInput): string {
   }
 
   const priorityBlocks: string[] = [];
-  if (top3.length > 0) {
-    priorityBlocks.push(`**${L.top3}**`, ...top3.map((item, i) => formatPriorityLine(item, i + 1)));
+  const totalOpen = live.jira?.assigned_open.length ?? 0;
+  if (displayedPriorities.length > 0) {
+    priorityBlocks.push(
+      `**${L.priorityList}**`,
+      `_${L.showingIssues(displayedPriorities.length, totalOpen)}_`,
+      ...displayedPriorities.map((item, i) => formatPriorityLine(item, i + 1)),
+    );
   } else {
-    priorityBlocks.push(`**${L.top3}**`, `1. — ${L.fewerCandidates(0)}`);
+    priorityBlocks.push(`**${L.priorityList}**`, `_${L.showingIssues(0, totalOpen)}_`, `1. — ${L.fewerCandidates(0)}`);
   }
 
-  if (next2.length > 0) {
-    priorityBlocks.push("", `**${L.next2}**`, ...next2.map((item, i) => formatPriorityLine(item, i + 4)));
+  if (totalOpen > displayedPriorities.length && jiraBaseUrl) {
+    priorityBlocks.push("", `[${L.viewRemaining}](${jiraFilterUrl(jiraBaseUrl)})`);
   }
 
   const todayStandup =
-    top3.length > 0
-      ? top3.map((t) => t.issue.key).join(", ")
+    primaryPriorities.length > 0
+      ? primaryPriorities.map((t) => t.issue.key).join(", ")
       : language === "vi"
         ? "Xem ưu tiên"
         : "See priorities";
@@ -313,8 +328,6 @@ export function renderMorningCard(input: RenderMorningCardInput): string {
   const risks = buildRisks(live, L, ranked.length);
 
   const lines = [
-    "<!-- MORNING_CARD: Keep all sections and ordering verbatim. The ONLY allowed edit is replacing the Calendar line with today's next 3 Outlook Calendar events. Keep the weekly leave/WFH tables and compact mobile list unchanged. -->",
-    "",
     `# ${L.title}`,
     `**${weekday}, ${date}** · ${timezone} · ${detail}`,
     "",

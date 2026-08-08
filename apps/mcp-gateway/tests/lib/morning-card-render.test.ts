@@ -92,6 +92,66 @@ describe("renderMorningCard", () => {
     expect(md).toContain("**[Q");
   });
 
+  it("keeps Done issues in recently_updated data but excludes them from priorities", () => {
+    const doneIssue = issue("DONE-1", "Completed yesterday", { status: "Done" });
+    const openIssue = issue("OPEN-1", "Still active");
+    const jira = jiraContext({
+      assigned_open: [openIssue],
+      recently_updated: [doneIssue, openIssue],
+      due_today: [],
+      overdue: [],
+    });
+
+    // The adapter contract remains unchanged: completed work is still present
+    // in recently_updated for reporting/history consumers.
+    expect(jira.recently_updated).toContainEqual(doneIssue);
+
+    const md = renderMorningCard({
+      language: "en",
+      detail: "standard",
+      timezone: "Asia/Ho_Chi_Minh",
+      live: live({ jira }),
+      jiraBaseUrl: "https://jira.example.com",
+    });
+
+    expect(md).toContain("[OPEN-1](https://jira.example.com/browse/OPEN-1)");
+    expect(md).toContain("Updated today");
+    expect(md).not.toContain("DONE-1");
+    expect(md).not.toContain("Completed yesterday");
+  });
+
+  it("shows at most 10 of the total open issues and links to the full Jira list", () => {
+    const assignedOpen = Array.from({ length: 12 }, (_, index) =>
+      issue(`OPEN-${index + 1}`, `Open issue ${index + 1}`),
+    );
+    const md = renderMorningCard({
+      language: "en",
+      detail: "standard",
+      timezone: "Asia/Ho_Chi_Minh",
+      live: live({ jira: jiraContext({ assigned_open: assignedOpen }) }),
+      jiraBaseUrl: "https://jira.example.com",
+    });
+
+    expect(md).toContain("Showing 10 of 12 open issue(s)");
+    expect(md).toContain("10. **[Q2]** [OPEN-10]");
+    expect(md).not.toContain("[OPEN-11]");
+    expect(md).not.toContain("[OPEN-12]");
+    expect(md).toContain("[View all open issues →]");
+  });
+
+  it("does not expose hidden HTML instructions in the rendered card", () => {
+    const md = renderMorningCard({
+      language: "en",
+      detail: "standard",
+      timezone: "Asia/Ho_Chi_Minh",
+      live: live(),
+      jiraBaseUrl: "https://jira.example.com",
+    });
+    expect(md).toMatch(/^# Morning Brief/);
+    expect(md).not.toContain("<!--");
+    expect(md).not.toContain("MORNING_CARD");
+  });
+
   it("renders Vietnamese headings", () => {
     const md = renderMorningCard({
       language: "vi",
