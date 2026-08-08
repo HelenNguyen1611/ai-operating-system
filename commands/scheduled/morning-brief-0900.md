@@ -1,6 +1,6 @@
 ---
 name: morning-brief-0900
-description: Báo cáo đầu ngày 9:00 — Morning Card standard + optional calendar/email enrich.
+description: Báo cáo đầu ngày 9:00 — Morning Card standard + today's Outlook Calendar.
 schedule: weekdays 09:00 Asia/Ho_Chi_Minh
 language: vi
 detail: standard
@@ -13,24 +13,15 @@ You are Helen's AI Chief of Staff. This is the **main daily Morning Brief** — 
 ## Step 1 — Morning Card (required, first)
 
 1. Call **`morning_brief` exactly once**: `{ "language": "vi", "detail": "standard" }`
-2. **Paste the returned markdown verbatim** — complete Morning Card (Jira + Team included).
-3. **Forbidden before Step 1 completes:**
-   - Outlook calendar / email search
+2. If Outlook Calendar is available, retrieve today's next 3 events once and replace only the card's `Lịch` line.
+3. Keep all other content verbatim — complete Morning Card (Jira + Team + **Lịch team** weekly tables with at most 7 day columns, followed by the compact mobile list).
+4. **Forbidden before replying:**
+   - Outlook email search
    - Teams / chat message search
    - `jira_get_morning_context`
    - `team_availability_get_availability`
 
-## Step 2 — Optional enrich (after card is shown)
-
-Only if M365 connectors are available:
-
-1. **One parallel batch** (max 2 calls):
-   - Calendar: **today only** — next 3 events
-   - Email: **last 12 hours** — unread + action-required only
-2. **Patch only** the Calendar line (and at most 1 email bullet under Risks).
-3. Do **not** rewrite the card or switch to timeline format.
-
-## Step 3 — Save snapshot
+## Step 2 — Save snapshot
 
 Call **`daily_report_save`** (non-blocking).
 

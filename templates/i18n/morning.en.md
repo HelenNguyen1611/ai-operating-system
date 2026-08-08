@@ -26,14 +26,14 @@ Use with `commands/_base/morning.base.md` and `templates/i18n/_morning-layout.md
 
 ### Priorities
 
-**Top 3**
+**Ranked open issues**
+_{showing} of {total} open issues_
 1. **[Q_]** [{KEY}]({url}) — {why}
 2. **[Q_]** [{KEY or action}]({url if any}) — {why}
-3. **[Q_]** [{KEY or action}]({url if any}) — {why}
+...
+10. **[Q_]** [{KEY}]({url}) — {why}
 
-**Next 2**
-4. **[Q_]** [{KEY}]({url}) — {why}
-5. **[Q_]** [{KEY}]({url}) — {why}
+{View all open issues link when total > showing}
 
 ---
 
@@ -56,7 +56,7 @@ Blockers: {one line or None}
 
 **At a glance:** mandatory. Team line always present. Jira line always present when `jira_get_morning_context` was called; otherwise `Jira: not loaded`.
 
-**Priorities:** Top 3 + Next 2 mandatory when candidates exist. Jira keys must be links. Non-Jira items omit link. If fewer than 5 candidates, state what is available.
+**Priorities:** show up to 10 ranked open issues. Always state `showing / total`; when truncated, include the full Jira link. Jira keys must be links.
 
 **Risks:** brief/standard max **3** bullets. Fold missing non-team sources here (not in Snapshot).
 

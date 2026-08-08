@@ -30,7 +30,7 @@ Vietnamese output by default.
 
 Natural-language triggers ("chào buổi sáng", "báo cáo đầu ngày") use the **same Morning Card** as this command.
 
-**Claude App:** call **`morning_brief({ language: "vi", detail: "standard" })` once** — **paste toàn bộ output verbatim** (gồm block HTML **Lịch team · tháng …**). Không tự viết lại Team/Jira. Lịch M365/email: bổ sung sau (Optional enrich) nếu cần.
+**Claude App:** call **`morning_brief({ language: "vi", detail: "standard" })` once**. Có thể đọc tối đa 3 event tiếp theo của Outlook Calendar hôm nay và chỉ thay dòng `Lịch`; giữ nguyên mọi nội dung còn lại, gồm các bảng tuần 7 ngày và danh sách compact mobile. Không đọc Outlook Mail hoặc tự viết lại Team/Jira.
 
 ---
 

@@ -23,15 +23,16 @@ Triggers: `good morning`, `chào buổi sáng`, `morning brief`, `báo cáo đ�
 **Goal: one tool call, reply in under 30 seconds.**
 
 1. Call **`morning_brief` once** — `{ language: "en"|"vi", detail: "standard" }` (or `brief`).
-2. **Paste the returned markdown verbatim** — complete Morning Card (Jira + team + **Lịch team HTML table**). Do **not** strip or reformat the `<div>…Lịch team…</div>` block between Team and Lịch lines.
-3. **Anti-patterns (wrong):** greeting + rewritten bullets; "Các thành viên khác không có leave"; prose Team section without HTML calendar; asking to load M365 before showing the card.
-4. **Forbidden before replying** (unless user explicitly asked for email/calendar/Teams or `detail: full`):
-   - Outlook calendar search
+2. If Outlook Calendar is available, make **one lookup for today's next 3 events**. Do not search email for meeting information.
+3. Replace only the returned card's **Calendar/Lịch line**. Keep the fallback line when Calendar is unavailable.
+4. Keep the rest of the returned markdown verbatim — complete Morning Card (Jira + team + **Lịch team weekly tables**, maximum 7 day columns each, followed by a compact mobile list). Do **not** strip or reformat either calendar representation.
+5. **Anti-patterns (wrong):** greeting + rewritten bullets; "Các thành viên khác không có leave"; prose Team section without the weekly tables and compact list; monthly meeting grids.
+6. **Forbidden before replying** (unless user explicitly asked or `detail: full`):
    - Outlook email search
    - Teams / chat message search
    - `jira_get_morning_context`
    - `team_availability_get_availability`
-5. Call **`daily_report_save` after** the user sees the brief (non-blocking).
+7. Call **`daily_report_save` after** the user sees the brief (non-blocking).
 
 Skip Step 1 handbook loading, Email Retrieval Strategy, and Standard collection below for this path.
 
@@ -39,27 +40,26 @@ Skip Step 1 handbook loading, Email Retrieval Strategy, and Standard collection 
 
 | Source | In `morning_brief` (standard)? | Notes |
 |--------|----------------------------------|-------|
-| **Jira** | Yes | Top 3, Next 2, open count, filter link |
-| **Team availability** | Yes | Team line + **month calendar HTML** (Lịch team · tháng …) from gateway |
-| **Calendar** | No (gateway) | M365 Outlook — not in gateway yet |
+| **Jira** | Yes | Up to 10 ranked open issues, showing/total count, full-list link |
+| **Team availability** | Yes | Team line + **7-day weekly Markdown tables and compact mobile list** (Lịch team · tháng …) from gateway |
+| **Calendar** | Optional client enrich | One Outlook Calendar lookup; today's next 3 events on the Calendar line only |
 | **Email** | No (gateway) | M365 Outlook — not in gateway yet |
 | **Teams chat** | No (gateway) | Native Claude connector only |
 
 Team is **not** skipped — if the Team line looks empty, check leave snapshot (Power Automate) or stale data, not the fast path.
 
-Calendar and email are **intentionally skipped** in standard to stay under ~30s. Use one of the options below when you need them.
+Email and Teams are intentionally skipped in standard. Calendar uses at most one today-only lookup.
 
-### Optional enrich (after showing the card — recommended daily)
+### Calendar enrich (standard)
 
-When M365 is connected and the user did **not** ask for speed-only (`brief` / `nhanh`):
+When Outlook Calendar is connected:
 
-1. Show **`morning_brief` markdown first** (do not wait).
-2. Then **one parallel batch** (max 2 connector calls):
-   - Calendar: **today only** (next 3 events)
-   - Email: **last 12 hours** (not 36h) — unread + action-required only
-3. **Patch only** the Calendar line (and optionally 1 email bullet under Risks) — do **not** rewrite the card or switch to timeline format.
+1. Retrieve **today only**, maximum 3 upcoming events.
+2. Replace only the `Calendar` / `Lịch` line in the pre-rendered card.
+3. Use local 24-hour time; show `No meetings` / `Không có meeting` when the lookup succeeds with no events.
+4. Do not use Outlook Mail as a meeting source and do not build a monthly meeting grid.
 
-For complete calendar + email + comms review, use **`detail: full`** (slower, ~1–2 min).
+For email, Teams, or a complete communications review, use **`detail: full`** (slower, ~1–2 min) or ask explicitly.
 
 ---
 
@@ -145,9 +145,10 @@ Before completing Communication Review, verify:
 
 When `morning_brief` returns **pre-rendered markdown** (brief or standard):
 
-1. **Show it verbatim** — complete Morning Card; Jira + team already inside.
-2. **No other tool calls** before the reply — especially no Outlook email/calendar or Teams search.
-3. **`daily_report_save` after** the user sees the brief.
+1. Jira, Team, and monthly leave/WFH calendar are already complete; never rebuild them.
+2. Optionally call Outlook Calendar once for today's next 3 events and replace only the Calendar/Lịch line.
+3. Do not call Outlook Mail, Teams, Jira, or Team Availability separately.
+4. **`daily_report_save` after** the user sees the brief.
 
 For `detail: full`, collect live context via separate connector tools as below.
 
@@ -196,7 +197,7 @@ Run the Runtime 41 workflow internally:
 2. Review calendar
 3. Review Jira
 4. Review communication
-5. Identify priorities — apply Eisenhower Matrix from `runtime/48_Reasoning_Engine.md` (Daily Prioritisation); classify candidates per Runtime 41 Step 6; select Top 3, **Next 2**, First Action, and the **Jira open-tasks link** (respect user focus context)
+5. Identify priorities — apply Eisenhower Matrix from `runtime/48_Reasoning_Engine.md` (Daily Prioritisation); classify candidates per Runtime 41 Step 6; display up to 10 ranked open issues, select the First Action, and include the **Jira open-tasks link** when more remain (respect user focus context)
 6. Identify blockers and risks
 7. Prepare stand-up
 8. Suggest execution plan
@@ -213,7 +214,7 @@ Same card structure for:
 
 - `/morning` and `/chaobuoisang`
 - natural language: "good morning", "chào buổi sáng", "prepare my morning brief", "báo cáo đầu ngày"
-- Claude App desktop and mobile — paste `morning_brief` output verbatim (includes inline HTML for team color + month calendar card; do not rebuild from template)
+- Claude App desktop and mobile — paste `morning_brief` output verbatim (includes the team line, 7-day weekly tables, and compact mobile list; do not rebuild from template)
 
 Apply the selected **language** and **detail** mode.
 
@@ -222,7 +223,7 @@ Apply the selected **language** and **detail** mode.
 1. Title + date + timezone
 2. **Snapshot** — First action, Mission, Confidence + source ticks (10-second read)
 3. **At a glance** — Team, Calendar, Jira count + link
-4. **Priorities** — Top 3 + Next 2 with Eisenhower tags and links
+4. **Priorities** — up to 10 ranked open issues with Eisenhower tags, showing/total count, and links
 5. **Risks**
 6. **Stand-up**
 
@@ -234,7 +235,7 @@ User must understand what to do first within **1 minute** without scrolling past
 - Maximum **3 bullets** in Risks (Priorities and At a glance are excluded from this cap).
 - No long explanations. Only what matters today.
 - **Omit expanded Context Budget** — fold other missing sources into Risks.
-- **Always include** Team (in At a glance), Top 3, Next 2, Jira link when Jira loaded — see template.
+- **Always include** Team (in At a glance), up to 10 ranked open issues, showing/total count, and Jira full-list link when more remain — see template.
 - Stand-up section follows language rules (English by default for team stand-up even in Vietnamese reports).
 
 ### standard

@@ -4,19 +4,21 @@ Condensed rules for Claude App `morning_brief` when `detail` is `brief` or `stan
 
 ## Speed rules (mandatory — target under 30 seconds)
 
-1. **ONE tool call:** `morning_brief({ language, detail: "standard" })` — nothing else before replying.
-2. **Forbidden before reply:** Outlook calendar, Outlook email, Teams/chat search, `jira_get_morning_context`, `team_availability_get_availability`.
-3. **Output:** paste returned markdown **verbatim** — complete Morning Card (Jira + team + **Lịch team HTML table** pre-filled).
-4. **No reformat:** no timeline, no Needs attention/Resolved sections. **Forbidden:** rewrite Team/Jira in your own words; **must include** the `<div>…Lịch team · tháng…</div>` HTML block from the tool (between Team line and Lịch line). Do not offer "bổ sung Calendar" before showing the card.
-5. **`daily_report_save` after** the user sees the brief — never block the reply on save.
+1. Call `morning_brief({ language, detail: "standard" })` exactly once.
+2. If Outlook Calendar is available, make **one Calendar call only** for today's next 3 events. Do not search Outlook Mail or infer meetings from email.
+3. Replace only the card's `Calendar` / `Lịch` line with those events. If Calendar is unavailable, keep the gateway fallback line unchanged.
+4. **Output:** keep every other character and section from the returned Morning Card unchanged, including Jira, Team, weekly leave/WFH tables, and compact mobile list.
+5. **No reformat:** no timeline, no Needs attention/Resolved sections. **Forbidden:** rewrite Team/Jira, create a monthly meeting calendar, or omit either leave-calendar representation.
+6. **`daily_report_save` after** the user sees the brief — never block the reply on save.
 
-Email/calendar/Teams only when user **explicitly** asked (e.g. "focus on Travis email") or `detail: full`.
+Outlook Mail and Teams are used only when the user **explicitly** asks or selects `detail: full`.
 
 ## What morning_brief already includes
 
-- Jira Top 3 + Next 2 (from live buckets)
+- Up to 10 ranked open Jira issues, with `showing / total` count and a full-list link when more remain
 - Team line (from leave snapshot)
-- **Team month calendar** — HTML grid `Lịch team · tháng …` (1–31 columns)
+- **Team month calendar** — Markdown split into weekly tables (maximum 7 day columns each), followed by a compact event-only mobile list
+- Today's next 3 meetings — optional single Outlook Calendar lookup; shown only on the `Calendar` / `Lịch` line
 - Jira open count + filter link
 - Snapshot, Risks, Stand-up skeleton
 

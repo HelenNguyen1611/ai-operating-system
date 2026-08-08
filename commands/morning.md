@@ -30,7 +30,7 @@ English output by default.
 
 Natural-language triggers ("good morning", "morning brief") use the **same Morning Card** as this command.
 
-**Claude App:** call **`morning_brief({ language: "en", detail: "standard" })` once** — paste result verbatim. Do **not** search Outlook/Teams/Jira separately unless user asked for email/calendar focus or `full`.
+**Claude App:** call **`morning_brief({ language: "en", detail: "standard" })` once**. Optionally read today's next 3 Outlook Calendar events and replace only the Calendar line; keep everything else verbatim. Do **not** search Outlook Mail, Teams, or Jira separately unless explicitly asked or using `full`.
 
 ---
 

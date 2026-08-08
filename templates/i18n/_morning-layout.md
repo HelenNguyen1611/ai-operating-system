@@ -9,7 +9,7 @@ Goals: **complete**, **accurate** (per workflow data), **scannable in under 1 mi
 ## Principles
 
 1. **Same section order** in every language — only labels and prose change.
-2. **Mobile-first** — no wide tables in brief/standard; use single-line label → value pairs.
+2. **Mobile-first** — calendar tables contain at most 7 day columns and are followed by an event-only compact list for narrow screens.
 3. **Snapshot first** — the first 3 lines answer "what do I do now?"
 4. **Links on keys** — every Jira issue key is a markdown link when `url` exists.
 5. **Honest gaps** — use `—` or "Not verified" instead of omitting a section.
@@ -22,7 +22,7 @@ Goals: **complete**, **accurate** (per workflow data), **scannable in under 1 mi
 1. Title + date + timezone + mode
 2. Snapshot (First action, Mission, Confidence + source ticks)
 3. Context at a glance (Team, Calendar, Jira summary + link)
-4. Priorities (Top 3, then Next 2)
+4. Priorities (up to 10 ranked open issues, showing/total count, then full-list link when truncated)
 5. Risks
 6. Stand-up draft
 7. Footer (optional one line: save offer — do not block the card)
@@ -83,7 +83,7 @@ Always in Context at a glance:
 | Context at a glance | ✓ compact | ✓ | ✓ + Context Budget detail |
 | Team detail | 1–2 lines in glance | 1–2 lines | Verified/Inferred/Unknown |
 | Calendar | next 2 events max | today's list (3 max) | full highlights |
-| Priorities Top 3 + Next 2 | ✓ | ✓ | ✓ + optional matrix |
+| Priorities, maximum 10 | ✓ | ✓ | ✓ + optional matrix |
 | Risks | max 3 bullets | max 3 bullets | unlimited |
 | Stand-up | ✓ | ✓ | ✓ |
 
@@ -110,7 +110,7 @@ Natural-language triggers follow the **same Morning Card layout** as slash comma
 
 - Skip Team or Jira link when tools were available to call
 - Use timeline layouts (morning/midday/afternoon) or Needs attention/Resolved sections — use Morning Card only
-- Rebuild the card from this template when using `detail: full` — for brief/standard, paste gateway `morning_brief` markdown verbatim (includes required HTML for team calendar)
+- Rebuild the card from this template when using `detail: full` — for brief/standard, paste gateway `morning_brief` markdown verbatim (includes required weekly calendar tables and compact mobile list)
 - Use nested tables
-- Duplicate the same issue in Top 3 and Next 2
+- Duplicate an issue in the ranked priority list
 - Add filler text before the Snapshot block

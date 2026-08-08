@@ -72,7 +72,7 @@ See `tests/manual/timezone-email-retrieval.md` for manual verification prompts.
 
 Remote MCP Gateway — makes this Operating System reachable from external AI clients (starting with the Claude App) over the Model Context Protocol, instead of relying on client-specific connectors.
 
-Status: **Experimental (Phase 0 — compatibility spike)**. Exposes one tool, `health_check`, over Streamable HTTP. See `runtime/50_Remote_Gateway.md` for scope, non-goals, and future direction, and `apps/mcp-gateway/docs/manual-test-claude-app.md` to connect a client.
+Status: **Experimental (Phase 2 extensions shipped; Phase 3 hardening not started)**. Exposes eight tools over Streamable HTTP: health, Morning Brief, Jira read-only, Team Availability, and local Daily Report persistence. See `runtime/50_Remote_Gateway.md` for scope and phase history, `apps/mcp-gateway/ROADMAP.md` for what is next, and `apps/mcp-gateway/README.md` for the current tool contracts and quick start.
 
 Self-contained package; the repository root remains package-less.
 

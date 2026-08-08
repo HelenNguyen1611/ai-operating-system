@@ -191,11 +191,11 @@ Apply the Eisenhower Matrix from `runtime/48_Reasoning_Engine.md` during Runtime
 
 All modes use the unified **Morning Card** layout (`templates/i18n/_morning-layout.md`) — same structure on Claude App desktop and mobile. User must grasp First action within **10 seconds** and full picture within **1 minute**.
 
-**Scan order:** Snapshot → At a glance (Team, Calendar, Jira) → Priorities (Top 3 + Next 2) → Risks → Stand-up.
+**Scan order:** Snapshot → At a glance (Team, Calendar, Jira) → Priorities (up to 10 ranked open issues) → Risks → Stand-up.
 
 ### Brief and Standard Mode
 
-Present the **Morning Card** — not a free-form summary. **Top 3** as primary focus, plus **Next 2** and Jira link in At a glance.
+Present the **Morning Card** — not a free-form summary. Show up to 10 ranked open issues with `showing / total`; when more remain, include the full Jira link.
 
 For each Top 3 and Next 2 item:
 
@@ -235,15 +235,15 @@ Recommendations should consider:
 - client commitments
 - available team members and focus time
 
-## Examples (Brief / Standard Top 3 + Next 2)
+## Example (Brief / Standard Ranked Open Issues)
 
-**Top 3**
+**Ranked open issues**
+
+_Showing 5 of 38 open issues_
 
 1. `[Q1]` TRIN-82 — Review before 15:00 release window; blocking deploy (due today, client path).
 2. `[Q1]` Reply to Travis — EOD response committed in email thread (same-day commitment).
 3. `[Q2]` UP-179 — Ownership UI; important but no due today; schedule deep work 10:00–12:00.
-
-**Next 2**
 
 4. `[Q2]` [UP-247](https://wootech.atlassian.net/browse/UP-247) — Home page styling after backend integration.
 5. `[Q3]` [CW-121](https://wootech.atlassian.net/browse/CW-121) — PM clarification pending; batch follow-up.
@@ -357,7 +357,9 @@ Before presenting the Morning Brief, verify:
 
 ✓ Recommendations are actionable.
 
-✓ Top 3 and Next 2 items have Eisenhower tags and evidence-backed why where applicable.
+✓ Up to 10 ranked open issues have Eisenhower tags and evidence-backed why where applicable.
+
+✓ The card states how many issues are shown out of the total and links to the full list when truncated.
 
 ✓ Open on Jira link and count shown when Jira context was loaded.
 
@@ -396,8 +398,8 @@ Include only:
 
 - Team Availability
 - Calendar Highlights
-- Top 3 Priorities (each with `[Q1]`–`[Q4]` tag and short why)
-- Next 2 (also on radar)
+- Up to 10 ranked open issues (each with `[Q1]`–`[Q4]` tag and short why)
+- Showing/total count and full-list link when truncated
 - Open on Jira (count + filter link, when Jira loaded)
 - Critical Risks
 - First Recommended Action (aligned with best Q1 or Q2)

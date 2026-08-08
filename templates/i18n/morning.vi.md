@@ -19,7 +19,7 @@ Use with `commands/_base/morning.base.md` and `templates/i18n/_morning-layout.md
 
 ### Tổng quan
 - **Team:** {copy `live.team_summary.line_vi` verbatim — 🟢 xanh = full team; 🟡 vàng = có nghỉ/WFH}
-- **Lịch team:** {card HTML tháng hiện tại — cột 1–31, cuộn ngang; badge AL/WFH/SL}
+- **Lịch team:** {các bảng Markdown theo tuần, tối đa 7 cột ngày mỗi bảng; bên dưới là danh sách compact cho mobile}
 - **Lịch:** {sự kiện sắp tới hoặc "không có meeting" — giờ local}
 - **Jira:** {open_count} mở · due hôm nay {n} · quá hạn {n} · [Xem tất cả task mở →]({filter_url})
 
@@ -27,14 +27,14 @@ Use with `commands/_base/morning.base.md` and `templates/i18n/_morning-layout.md
 
 ### Ưu tiên
 
-**Top 3**
+**Issue mở đã xếp hạng**
+_Đang hiển thị {showing} / tổng {total} issue mở_
 1. **[Q_]** [{KEY}]({url}) — {lý do}
 2. **[Q_]** [{KEY hoặc việc}]({url nếu có}) — {lý do}
-3. **[Q_]** [{KEY hoặc việc}]({url nếu có}) — {lý do}
+...
+10. **[Q_]** [{KEY}]({url}) — {lý do}
 
-**2 việc tiếp theo**
-4. **[Q_]** [{KEY}]({url}) — {lý do}
-5. **[Q_]** [{KEY}]({url}) — {lý do}
+{Link xem đầy đủ khi total > showing}
 
 ---
 
@@ -57,7 +57,7 @@ Blockers: {one line or None — English}
 
 **Tổng quan:** bắt buộc. Dòng Team luôn có. Dòng Jira luôn có khi đã gọi `jira_get_morning_context`; nếu không: `Jira: chưa load`.
 
-**Ưu tiên:** Top 3 + 2 việc tiếp theo bắt buộc khi có candidate. Key Jira phải là link. Nếu ít hơn 5 candidate, ghi phần có.
+**Ưu tiên:** hiển thị tối đa 10 issue mở đã xếp hạng. Luôn ghi `đang hiển thị / tổng`; khi bị cắt, thêm link Jira xem đầy đủ. Key Jira phải là link.
 
 **Rủi ro:** brief/standard tối đa **3** bullet. Gộp nguồn thiếu (không phải Team) vào đây.
 
