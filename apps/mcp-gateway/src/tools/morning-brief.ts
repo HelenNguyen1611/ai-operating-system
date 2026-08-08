@@ -207,14 +207,12 @@ export function registerMorningBrief(server: McpServer): void {
   server.registerTool(
     "morning_brief",
     {
-      title: "Morning Brief — use ONLY for good morning / chào buổi sáng",
+      title: "Morning Brief",
       description:
-        "**Primary tool for daily morning brief (brief or standard).** Returns complete pre-rendered " +
-        "Morning Card markdown (Jira + team line + **7-day weekly tables and compact mobile list**). " +
-        "Keep the tool result verbatim except you MAY replace only its Calendar line after one Outlook Calendar lookup for today's next 3 events. Do NOT rewrite Team/Jira in prose, " +
-        "do NOT omit the Lịch team weekly tables or compact list, do NOT greet then summarize. " +
-        "**Do NOT call** jira_get_morning_context, team_availability_get_availability, Outlook Mail, or Teams. " +
-        "Typical args: { language: \"en\"|\"vi\", detail: \"standard\" }.",
+        "Generates the daily Morning Card. For brief or standard detail, the returned Markdown is " +
+        "server-rendered from current Jira and Team Availability data and includes ranked open issues, " +
+        "weekly leave/WFH tables, and a compact mobile list. Full detail returns framework context for " +
+        "extended processing. Typical input: { language: \"en\"|\"vi\", detail: \"standard\" }.",
       inputSchema: MorningBriefInputShape,
     },
     async (args) => {
