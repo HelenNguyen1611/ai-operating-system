@@ -250,6 +250,12 @@ export function renderTeamCalendarMarkdown(
     const days = calendar.days.slice(start, start + DAYS_PER_WEEK);
     const weekNumber = Math.floor(start / DAYS_PER_WEEK) + 1;
     const weekLabel = language === "vi" ? `Tuần ${weekNumber}` : `Week ${weekNumber}`;
+    const isCurrentWeek = days.some((day) => day.isToday);
+    const currentWeekMarker = isCurrentWeek
+      ? language === "vi"
+        ? " · _hiện tại_"
+        : " · _current_"
+      : "";
     const dayHeaders = days.map((day) =>
       day.isToday ? `**${day.dayOfMonth}**` : String(day.dayOfMonth),
     );
@@ -259,7 +265,7 @@ export function renderTeamCalendarMarkdown(
       const cells = row.cells.slice(start, start + DAYS_PER_WEEK).map((cell) => cell?.code ?? "·");
       return `| ${row.name} | ${cells.join(" | ")} |`;
     });
-    weekTables.push(`**${weekLabel}**`, "", headerRow, separator, ...bodyRows, "");
+    weekTables.push(`**${weekLabel}**${currentWeekMarker}`, "", headerRow, separator, ...bodyRows, "");
   }
 
   const compactLabel = language === "vi" ? "Dạng gọn · mobile" : "Compact · mobile";

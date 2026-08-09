@@ -96,7 +96,8 @@ describe("renderTeamCalendarMarkdown", () => {
     const calendar = buildTeamMonthCalendar([person()], "2026-08-06");
     const md = renderTeamCalendarMarkdown(calendar, "vi");
     expect(md).toContain("**Lịch team ·");
-    expect(md).toContain("**Tuần 1**");
+    expect(md).toContain("**Tuần 1** · _hiện tại_");
+    expect(md).not.toContain("**Tuần 2** · _hiện tại_");
     expect(md).toContain("| Thành viên |");
     expect(md).toContain("| Alice Nguyen |");
     expect(md).toContain("AL?");
@@ -105,6 +106,15 @@ describe("renderTeamCalendarMarkdown", () => {
     expect(md).toContain("| Thành viên | 1 | 2 | 3 | 4 | 5 | **6** | 7 |");
     expect(md).not.toContain("| 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 |");
     expect(md).not.toContain("<div");
+  });
+
+  it("highlights the current week and current day in English", () => {
+    const calendar = buildTeamMonthCalendar([person()], "2026-08-13");
+    const md = renderTeamCalendarMarkdown(calendar, "en");
+
+    expect(md).toContain("**Week 2** · _current_");
+    expect(md).not.toContain("**Week 1** · _current_");
+    expect(md).toContain("| Member | 8 | 9 | 10 | 11 | 12 | **13** | 14 |");
   });
 });
 
