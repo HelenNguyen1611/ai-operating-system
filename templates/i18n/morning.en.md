@@ -19,6 +19,7 @@ Use with `commands/_base/morning.base.md` and `templates/i18n/_morning-layout.md
 
 ### At a glance
 - **Team:** {copy `live.team_summary.line_en` verbatim — 🟢 green = full team; 🟡 yellow = leave/WFH today}
+- **Team schedule:** {weekly Markdown tables, maximum 7 day columns per table, followed by a compact mobile list}
 - **Calendar:** {next event or "no meetings" — times in local TZ}
 - **Jira:** {open_count} open · due today {n} · overdue {n} · [View all open tasks →]({filter_url})
 
@@ -54,7 +55,7 @@ Blockers: {one line or None}
 
 **Snapshot:** mandatory first content after title. User must grasp First action + Mission in **10 seconds**.
 
-**At a glance:** mandatory. Team line always present. Jira line always present when `jira_get_morning_context` was called; otherwise `Jira: not loaded`.
+**At a glance:** mandatory. Team line and Team schedule are always present when team availability is loaded. Team schedule uses weekly tables with no more than 7 day columns per table, followed by the compact mobile list. Jira line always present when `jira_get_morning_context` was called; otherwise `Jira: not loaded`.
 
 **Priorities:** show up to 10 ranked open issues. Always state `showing / total`; when truncated, include the full Jira link. Jira keys must be links.
 

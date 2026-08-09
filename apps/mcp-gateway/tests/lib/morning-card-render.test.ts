@@ -208,6 +208,45 @@ describe("renderMorningCard", () => {
     expect(md.trimEnd().endsWith("_AL = nghỉ phép · AL? = chưa duyệt · WFH · SL = ốm · · = không nghỉ_")).toBe(true);
   });
 
+  it("renders the complete English team schedule at the end in seven-day tables", () => {
+    const md = renderMorningCard({
+      language: "en",
+      detail: "standard",
+      timezone: "Asia/Ho_Chi_Minh",
+      live: live({
+        team_availability: {
+          date: "2026-08-06",
+          team_scope: "all",
+          events: [],
+          generated_at: "2026-08-06T07:00:00+07:00",
+          timezone: "Asia/Ho_Chi_Minh",
+          snapshot_people_total: 1,
+          snapshot_latest_end_date: "2026-08-07",
+          month_calendar: buildTeamMonthCalendar(
+            [
+              {
+                name: "Alice Nguyen",
+                start_date: "2026-08-06",
+                end_date: "2026-08-07",
+                availability_type: "Annual Leave",
+                approval_status: "",
+              },
+            ],
+            "2026-08-06",
+          ),
+        },
+      }),
+      jiraBaseUrl: "https://jira.example.com",
+    });
+
+    expect(md).toContain("**Team schedule · August 2026**");
+    expect(md).toContain("| Member | 1 | 2 | 3 | 4 | 5 | **6** | 7 |");
+    expect(md).not.toContain("| 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 |");
+    expect(md).toContain("**Compact · mobile**");
+    expect(md.indexOf("**Team schedule ·")).toBeGreaterThan(md.indexOf("### Stand-up"));
+    expect(md.trimEnd().endsWith("_AL = leave · AL? = pending · WFH · SL = sick · · = available_")).toBe(true);
+  });
+
   it("keeps every required section in the canonical order", () => {
     const md = renderMorningCard({
       language: "en",
