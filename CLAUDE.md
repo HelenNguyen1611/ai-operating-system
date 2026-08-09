@@ -12,8 +12,8 @@ For `chào buổi sáng`, `báo cáo đầu ngày`, `/chaobuoisang`, `good morni
 2. The tool returns a complete, server-rendered Morning Card. **Display the returned Markdown with formatted template structure:**
    - Preserve **all content verbatim** (no omissions, no paraphrasing, no shortening)
    - Reorganize calendar tables **by week** with current week clearly marked
-   - Add visual markers: `← **TODAY**` for current week, bold current day (`**9**`)
-   - Add week date ranges as section headers: `**Week 2** (8–14) ← **TODAY**`
+   - Add visual markers: mark the current week's header with bold + arrows (e.g. `**▶Week 2◀** (8–14)`) instead of appending the word "TODAY" — do NOT use raw HTML tags like `<u>`, they render as literal text in this chat interface, not as formatting. Mark current day's column header the same way: `**▶9◀**`
+   - Add week date ranges as section headers: `**▶Week 2◀** (8–14)`
    - Do not summarize, shorten content, select only three Jira issues, or replace with a greeting
 3. Do not call `jira_get_morning_context` or `team_availability_get_availability` for this workflow; their live data is already bundled into `morning_brief`.
 4. If Outlook Calendar is available, one lookup for today's next three events is allowed. Replace only the `Lịch` / `Calendar` line; preserve every other character from the card.

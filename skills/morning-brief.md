@@ -15,7 +15,8 @@ Show today's Morning Card in under 30 seconds — formatted per Helen's template
    - **Preserve ALL content verbatim** — no omissions, no paraphrasing, no shortening of issues or text
    - **Reorganize Team Schedule section ONLY:**
      - Keep calendar tables but add week date ranges as headers: `**Week 1** (1–7)`, `**Week 2** (8–14)`, etc.
-     - Identify current week from `**9**` (or today's date) and mark it: `**Week 2** (8–14) ← **TODAY**`
+     - Identify current week from today's date and mark the header with bold + arrows: `**▶Week 2◀** (8–14)` — no "TODAY" word, and no raw HTML tags like `<u>` (they render as literal text in this chat interface)
+     - Mark today's day-column header as `**▶9◀**` — bold alone is NOT enough (renders too subtly inside a table cell), use bold + arrows together
      - Keep all rows and columns intact
    - Do not summarize, shorten content, select only three Jira issues, or replace with a greeting
 3. **Do not call** `jira_get_morning_context` or `team_availability_get_availability` — their live data is bundled into `morning_brief`.
