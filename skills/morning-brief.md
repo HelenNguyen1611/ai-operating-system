@@ -34,7 +34,7 @@ Show today's Morning Card in under 30 seconds — formatted per Helen's template
    - **Risks / Rủi ro — never skip**
    - Stand-up — copy `Blockers:` wording exactly
    - Team schedule / Lịch team — **reorganized by week with date ranges and current-week marking** (content verbatim)
-   - **Compact · mobile summary — never skip**
+   - **Compact · mobile summary — never skip**. Reorder entries chronologically by leave start date (earliest day first), not alphabetically by name
    - Final legend line — copy in full, do not truncate
 
 ## Failure handling

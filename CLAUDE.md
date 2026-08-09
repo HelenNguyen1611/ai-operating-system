@@ -28,7 +28,7 @@ For `chào buổi sáng`, `báo cáo đầu ngày`, `/chaobuoisang`, `good morni
    - `### Risks` / `### Rủi ro` — **do not skip this section, even if short**
    - `### Stand-up` — copy the `Blockers:` line's exact wording, do not shorten
    - `**Team schedule …**` / `**Lịch team …**` — all week tables, formatted by week with date ranges and current-week highlighting
-   - `**Compact · mobile**` / equivalent compact leave list — **do not skip this section**
+   - `**Compact · mobile**` / equivalent compact leave list — **do not skip this section**. Sort entries chronologically by leave start date (earliest first), not alphabetically by name
    - The final legend line (`AL = … · WFH · SL = … · · = available`) — copy in full, do not truncate
 
 If `morning_brief` fails, report the error and unavailable sources honestly. Do not fabricate a fallback brief from remembered Jira items.
