@@ -55,8 +55,8 @@ function live(overrides: Partial<MorningLiveContext> = {}): MorningLiveContext {
     },
     team_summary: {
       status: "loaded",
-      line_en: "No approved leave or WFH for 2026-08-06 — full team capacity expected",
-      line_vi: "Không có nghỉ phép/WFH ngày 2026-08-06 — team đủ người",
+      line_en: "No leave or WFH recorded for today",
+      line_vi: "Không ghi nhận nghỉ phép/WFH hôm nay",
     },
     ...overrides,
   };
@@ -163,7 +163,10 @@ describe("renderMorningCard", () => {
     expect(md).toContain("# Báo cáo đầu ngày");
     expect(md).toContain("### Tóm tắt nhanh");
     expect(md).toContain("### Tổng quan");
-    expect(md).toContain("team đủ người");
+    expect(md).toContain("Không ghi nhận nghỉ phép/WFH hôm nay");
+    expect(md).not.toContain("team đủ người");
+    expect(md).toContain("Blockers: Chưa xác minh");
+    expect(md).not.toContain("Blockers: None");
   });
 
   it("includes team calendar table when month_calendar has rows", () => {
@@ -201,6 +204,8 @@ describe("renderMorningCard", () => {
     expect(md).toContain("| Thành viên |");
     expect(md).toContain("| Alice Nguyen |");
     expect(md).toContain("AL?");
+    expect(md.indexOf("**Lịch team ·")).toBeGreaterThan(md.indexOf("### Stand-up"));
+    expect(md.trimEnd().endsWith("_AL = nghỉ phép · AL? = chưa duyệt · WFH · SL = ốm · · = không nghỉ_")).toBe(true);
   });
 
   it("keeps every required section in the canonical order", () => {

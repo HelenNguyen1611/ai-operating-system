@@ -2,6 +2,8 @@
 
 A structured knowledge and execution system for an AI Chief of Staff — handbooks, runtime, commands, and templates.
 
+> **Claude Project:** read `CLAUDE.md` first. For a natural-language morning greeting, call `morning_brief({ language: "vi"|"en", detail: "standard" })` once and display the complete returned Markdown verbatim. Never reduce it to a greeting plus three Jira bullets.
+
 ---
 
 ## Commands

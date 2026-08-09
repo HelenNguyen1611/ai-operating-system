@@ -248,6 +248,10 @@ export function validateMorningCardMarkdown(
     if (!markdown.includes(compactLabel)) {
       throw new MorningCardContractError("missing compact mobile team calendar");
     }
+    const calendarTitle = language === "vi" ? "**Lịch team ·" : "**Team schedule ·";
+    if (markdown.indexOf(calendarTitle) <= markdown.indexOf(`### ${L.standup}`)) {
+      throw new MorningCardContractError("team calendar must be at the end of the report");
+    }
   }
 }
 
@@ -342,7 +346,6 @@ export function renderMorningCard(input: RenderMorningCardInput): string {
     "",
     `### ${L.atGlance}`,
     `- **${L.team}:** ${teamLine}`,
-    ...(teamCalendarBlock ? ["", teamCalendarBlock] : []),
     `- **${L.calendar}:** ${L.calendarDefault}`,
     jiraLine,
     "",
@@ -362,9 +365,12 @@ export function renderMorningCard(input: RenderMorningCardInput): string {
     `### ${L.standup}`,
     `Yesterday: ${language === "vi" ? "—" : "—"}`,
     `Today: ${todayStandup}`,
-    "Blockers: None",
+    language === "vi"
+      ? "Blockers: Chưa xác minh — morning context không có nguồn blocker chuyên biệt"
+      : "Blockers: Not verified — morning context has no dedicated blocker source",
     "",
     "---",
+    ...(teamCalendarBlock ? ["", teamCalendarBlock] : []),
   ];
 
   const markdown = lines.join("\n");

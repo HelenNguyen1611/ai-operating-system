@@ -26,7 +26,8 @@ describe("buildTeamSummary", () => {
   it("returns loaded line when no one is on leave today", () => {
     const summary = buildTeamSummary(result({ snapshot_people_total: 70, snapshot_latest_end_date: "2026-08-06" }));
     expect(summary.status).toBe("loaded");
-    expect(summary.line_en).toContain("Full team");
+    expect(summary.line_en).toContain("No leave or WFH recorded for today");
+    expect(summary.line_en).not.toContain("Full team");
   });
 
   it("warns when snapshot records do not cover today", () => {

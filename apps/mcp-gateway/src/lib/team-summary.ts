@@ -68,8 +68,8 @@ function buildLoadedLines(result: TeamAvailabilityResult): TeamSummaryResult {
     return {
       status: "loaded",
       capacity: "full",
-      line_en: teamLineGreen(`Full team — no one on leave or WFH today.${staleNoteEn}`),
-      line_vi: teamLineGreen(`Full team — không ai nghỉ phép hôm nay.${staleNoteVi}`),
+      line_en: teamLineGreen(`No leave or WFH recorded for today.${staleNoteEn}`),
+      line_vi: teamLineGreen(`Không ghi nhận nghỉ phép/WFH hôm nay.${staleNoteVi}`),
       warning: stale
         ? `Leave snapshot has ${snapshot_people_total} records but none cover ${date}; latest end_date is ${snapshot_latest_end_date}. Check Power Automate export.`
         : undefined,

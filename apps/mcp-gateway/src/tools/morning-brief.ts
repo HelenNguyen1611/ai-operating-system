@@ -209,7 +209,10 @@ export function registerMorningBrief(server: McpServer): void {
     {
       title: "Morning Brief",
       description:
-        "Generates the daily Morning Card. For brief or standard detail, the returned Markdown is " +
+        "Use this tool for every good morning / chào buổi sáng request. Generates the complete daily " +
+        "Morning Card. For brief or standard detail, display the ENTIRE returned Markdown verbatim: " +
+        "never summarize, paraphrase, shorten to three issues, or add unsupported team/blocker claims. " +
+        "The returned Markdown is " +
         "server-rendered from current Jira and Team Availability data and includes ranked open issues, " +
         "weekly leave/WFH tables, and a compact mobile list. Full detail returns framework context for " +
         "extended processing. Typical input: { language: \"en\"|\"vi\", detail: \"standard\" }.",
